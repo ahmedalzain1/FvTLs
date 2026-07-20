@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FalconViz TimeLapse System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+<style>
+:root{
+  --ink:#081627;            /* FalconViz deep navy */
+  --panel:#0f2038;          /* card / panel */
+  --panel-2:#152e4d;        /* raised panel */
+  --line:rgba(214,226,238,.10);
+  --line-strong:rgba(214,226,238,.20);
+  --text:#e9eef4;
+  --muted:#8fa1b3;
+  --gold:#3d9be9;           /* FalconViz light blue accent */
+  --gold-deep:#1050a0;      /* FalconViz brand blue */
+  --teal:#28a89a;           /* FalconViz teal accent */
+  --ok:#4fc98a;
+  --warn:#e5734f;
+  --live:#e74c3c;
+  --radius:10px;
+  --osd-font:'IBM Plex Mono',ui-monospace,monospace;
+  --chrome-bg:rgba(8,22,39,.92);
+  --input-bg:#0b1626;
+  --btn-hover:#1c3a60;
+  --stage-bg:#040a12;
+}
+/* ---------- light theme (FalconViz bright) ---------- */
+:root[data-theme="light"]{
+  --ink:#eef3f9;
+  --panel:#ffffff;
+  --panel-2:#e7eef7;
+  --line:rgba(16,60,110,.14);
+  --line-strong:rgba(16,60,110,.26);
+  --text:#12263f;
+  --muted:#5a7089;
+  --gold:#1050a0;
+  --gold-deep:#0b3d7c;
+  --chrome-bg:rgba(255,255,255,.93);
+  --input-bg:#f4f8fc;
+  --btn-hover:#dbe7f4;
+}
+:root[data-theme="light"] input,:root[data-theme="light"] select,:root[data-theme="light"] textarea{color-scheme:light}
+:root[data-theme="light"] .login-wrap{
+  background:
+    radial-gradient(1200px 500px at 80% -10%,rgba(16,80,160,.14),transparent 60%),
+    radial-gradient(900px 500px at 0% 110%,rgba(40,168,154,.14),transparent 60%),
+    var(--ink);
+}
+:root[data-theme="light"] .client-logo{border:1px solid var(--line)}
+:root[data-theme="light"] .chip.gold{color:#0b3d7c}
+:root[data-theme="light"] .tab.active{color:#0b3d7c;border-bottom-color:#1050a0}
+:root[data-theme="light"] a{color:#0b3d7c}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--ink);
+  color:var(--text);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,.display{font-family:'Rajdhani',sans-serif;letter-spacing:.02em;text-transform:uppercase}
+a{color:var(--gold);text-decoration:none}
+a:hover{text-decoration:underline}
+img{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{
+  font-family:inherit;font-size:14px;color:var(--text);
+  background:var(--input-bg);border:1px solid var(--line-strong);
+  border-radius:8px;padding:9px 11px;width:100%;
+}
+input[type="date"],input[type="time"]{color-scheme:dark}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:1px;border-color:transparent}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.field{margin-bottom:14px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>.field{flex:1;min-width:150px}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--panel-2);color:var(--text);
+  border:1px solid var(--line-strong);border-radius:8px;
+  padding:9px 15px;font-size:14px;font-weight:500;
+  transition:background .15s,border-color .15s;
+}
+.btn:hover{background:var(--btn-hover);border-color:var(--gold)}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn.primary{background:#1b6fc7;border-color:#1b6fc7;color:#fff;font-weight:600}
+.btn.primary:hover{background:#2f83db}
+.btn.danger{color:#ff8d78}
+.btn.danger:hover{border-color:var(--warn)}
+.btn.sm{padding:5px 10px;font-size:13px;border-radius:6px}
+.btn.icon{padding:8px 10px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn-ghost{background:none;border:none;color:var(--muted);padding:6px}
+.btn-ghost:hover{color:var(--text)}
+
+/* ---------- login ---------- */
+.login-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:
+    radial-gradient(1200px 500px at 80% -10%,rgba(16,80,160,.35),transparent 60%),
+    radial-gradient(900px 500px at 0% 110%,rgba(40,168,154,.12),transparent 60%),
+    var(--ink);
+}
+.login-card{
+  width:100%;max-width:400px;background:var(--panel);
+  border:1px solid var(--line);border-radius:14px;padding:34px 30px;
+}
+.login-card .brand{justify-content:center;margin-bottom:8px}
+.login-sub{color:var(--muted);text-align:center;font-size:13px;margin-bottom:26px}
+.login-demo{margin-top:18px;border-top:1px solid var(--line);padding-top:14px;font-size:12px;color:var(--muted)}
+.login-demo code{color:var(--gold);font-family:var(--osd-font)}
+
+/* ---------- brand ---------- */
+.brand{display:flex;align-items:center;gap:10px}
+.brand .mark{flex:none}
+.brand .word{font-family:'Rajdhani';font-weight:700;font-size:19px;letter-spacing:.06em;line-height:1.05;text-transform:uppercase}
+.brand .word small{display:block;font-size:10px;letter-spacing:.32em;color:var(--teal);font-weight:600}
+.client-logo{height:38px;max-width:150px;object-fit:contain;border-radius:6px;background:#fff;padding:3px 6px}
+
+/* ---------- shell ---------- */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;gap:14px;
+  padding:10px 18px;background:var(--chrome-bg);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.topbar .spacer{flex:1}
+.topbar .who{font-size:13px;color:var(--muted);text-align:right;line-height:1.25}
+.topbar .who b{color:var(--text);display:block}
+.crumbs{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.crumbs a{color:var(--muted)}
+.crumbs a:hover{color:var(--gold);text-decoration:none}
+.crumbs .sep{opacity:.5}
+.crumbs .here{color:var(--text);font-weight:500}
+
+.page{max-width:1280px;margin:0 auto;padding:22px 18px 90px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.page-head h1{font-size:26px}
+.page-head .sub{color:var(--muted);font-size:13px;margin-top:2px;text-transform:none;font-family:'Inter'}
+
+.footer{
+  position:fixed;right:14px;bottom:10px;z-index:40;
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;
+  background:var(--chrome-bg);border:1px solid var(--line);border-radius:999px;
+  padding:5px 12px;backdrop-filter:blur(6px);
+}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto;scrollbar-width:thin}
+.tab{
+  flex:none;background:none;border:none;color:var(--muted);
+  font-family:'Rajdhani';font-weight:600;font-size:15px;letter-spacing:.05em;text-transform:uppercase;
+  padding:10px 14px;border-bottom:2px solid transparent;white-space:nowrap;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* ---------- cards ---------- */
+.grid{display:grid;gap:16px}
+.grid.projects{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.grid.cams{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;transition:border-color .15s,transform .15s;
+}
+.card.click{cursor:pointer}
+.card.click:hover{border-color:var(--gold);transform:translateY(-2px)}
+.card .thumb{aspect-ratio:16/9;background:#0a0f14;position:relative;overflow:hidden}
+.card .thumb img{width:100%;height:100%;object-fit:cover}
+.card .body{padding:13px 15px}
+.card .body h3{font-size:17px}
+.card .body p{font-size:13px;color:var(--muted);margin-top:3px}
+.card .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.chip{
+  font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  border:1px solid var(--line-strong);color:var(--muted);
+  padding:2px 8px;border-radius:999px;
+}
+.chip.gold{color:var(--gold);border-color:rgba(61,155,233,.55)}
+.chip.live{color:#ff8d78;border-color:rgba(231,76,60,.55)}
+.chip.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--live);margin-right:5px;animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.panel h3{font-size:16px;margin-bottom:12px;color:var(--gold)}
+
+/* ---------- viewer stage ---------- */
+.stage-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.stage-tools{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:10px 12px;border-bottom:1px solid var(--line);background:var(--panel-2);
+}
+.stage-tools .grow{flex:1}
+.stage{
+  position:relative;width:100%;background:#040a12;overflow:hidden;
+  aspect-ratio:16/9;user-select:none;touch-action:none;
+}
+.stage img.main, .stage video.main{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  transform-origin:center center;will-change:transform;
+}
+.stage.grabbable{cursor:grab}
+.stage.grabbing{cursor:grabbing}
+.osd{
+  position:absolute;top:10px;right:10px;z-index:5;
+  font-family:var(--osd-font);font-size:12.5px;line-height:1.45;
+  background:rgba(5,8,11,.72);border:1px solid rgba(61,155,233,.40);
+  color:#a9d3ff;padding:7px 11px;border-radius:6px;text-align:right;
+  pointer-events:none;
+}
+.osd b{color:#fff;font-weight:500}
+.osd .rec{color:var(--live)}
+.stage .stage-msg{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:var(--muted);font-size:14px;text-align:center;padding:20px;z-index:2;
+}
+video.player{width:100%;aspect-ratio:16/9;background:#000;display:block}
+
+/* ---------- compare slider ---------- */
+.cmp-stage{position:relative;width:100%;aspect-ratio:16/9;background:#040a12;overflow:hidden;touch-action:none}
+.cmp-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.cmp-stage .imgA{z-index:2}
+.cmp-handle{
+  position:absolute;top:0;bottom:0;z-index:6;width:0;
+  border-left:2px solid var(--gold);cursor:ew-resize;
+}
+.cmp-handle .knob{
+  position:absolute;top:50%;left:0;transform:translate(-50%,-50%);
+  width:34px;height:34px;border-radius:50%;
+  background:#1b6fc7;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:15px;box-shadow:0 2px 10px rgba(0,0,0,.5);
+}
+.cmp-tag{
+  position:absolute;top:10px;z-index:5;font-family:var(--osd-font);font-size:11.5px;
+  background:rgba(5,8,11,.72);border:1px solid var(--line-strong);color:#a9d3ff;
+  padding:4px 9px;border-radius:5px;pointer-events:none;
+}
+.cmp-tag.a{left:10px}.cmp-tag.b{right:10px}
+
+/* ---------- walls ---------- */
+.wall{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+.wall .tile{background:#05080b;border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative}
+.wall .tile .tag{
+  position:absolute;left:8px;bottom:8px;z-index:4;
+  font-family:var(--osd-font);font-size:11.5px;color:#a9d3ff;
+  background:rgba(5,8,11,.75);padding:3px 8px;border-radius:4px;
+}
+.wall .tile img{width:100%;aspect-ratio:16/9;object-fit:cover}
+.wall .tile video{width:100%;aspect-ratio:16/9;background:#000}
+
+/* ---------- tables ---------- */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{
+  text-align:left;font-family:'Rajdhani';font-size:13px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line-strong);
+}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.table-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
+
+/* ---------- modal / toast ---------- */
+.modal-back{
+  position:fixed;inset:0;z-index:100;background:rgba(4,7,10,.7);backdrop-filter:blur(3px);
+  display:flex;align-items:flex-start;justify-content:center;padding:5vh 16px;overflow-y:auto;
+}
+.modal{
+  width:100%;max-width:560px;background:var(--panel);
+  border:1px solid var(--line-strong);border-radius:14px;overflow:hidden;
+  animation:pop .18s ease-out;
+}
+@keyframes pop{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+.modal .m-head{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:1px solid var(--line)}
+.modal .m-head h3{font-size:17px;color:var(--gold)}
+.modal .m-body{padding:20px}
+.modal .m-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+.toast-zone{position:fixed;left:50%;bottom:52px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{
+  background:var(--panel-2);border:1px solid var(--gold);color:var(--text);
+  padding:10px 18px;border-radius:999px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.5);
+  animation:pop .2s ease-out;
+}
+.toast.err{border-color:var(--warn)}
+
+/* ---------- misc ---------- */
+.empty{
+  border:1px dashed var(--line-strong);border-radius:var(--radius);
+  padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;
+}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.gallery .g{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.gallery .g img{width:100%;aspect-ratio:4/3;object-fit:cover}
+.gallery .g .x{
+  position:absolute;top:5px;right:5px;background:rgba(0,0,0,.65);border:none;color:#fff;
+  width:24px;height:24px;border-radius:50%;font-size:13px;line-height:1;
+}
+.progress{height:8px;background:var(--input-bg);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.progress i{display:block;height:100%;background:var(--gold);width:0%;transition:width .2s}
+.checklist{max-height:220px;overflow-y:auto;border:1px solid var(--line-strong);border-radius:8px;padding:10px;background:var(--input-bg)}
+.checklist label{display:flex;align-items:center;gap:8px;text-transform:none;font-size:13.5px;color:var(--text);margin:0 0 7px;font-weight:400;cursor:pointer}
+.checklist label:last-child{margin-bottom:0}
+.checklist input{width:auto}
+.checklist .grp{font-size:11px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;margin:8px 0 6px;font-weight:600}
+.checklist .grp:first-child{margin-top:0}
+
+/* ---------- subbar (breadcrumb / back navigation) ---------- */
+.subbar{
+  position:sticky;top:49px;z-index:45;
+  display:flex;align-items:center;gap:10px;
+  padding:9px 18px;background:var(--chrome-bg);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.subbar .back-btn{
+  flex:none;display:flex;align-items:center;gap:6px;
+  background:none;border:1px solid var(--line-strong);border-radius:7px;
+  color:var(--text);padding:5px 11px;font-size:13px;font-weight:600;
+}
+.subbar .back-btn:hover{border-color:var(--gold);color:var(--gold)}
+.subbar .crumbs{display:flex}
+
+/* ---------- side zoom control (map-style, for live/timelapse stages) ---------- */
+.zoom-side{
+  position:absolute;top:50%;right:12px;transform:translateY(-50%);z-index:7;
+  display:flex;flex-direction:column;background:rgba(5,8,11,.75);
+  border:1px solid var(--line-strong);border-radius:9px;overflow:hidden;
+}
+.zoom-side button{
+  width:36px;height:36px;background:none;border:none;color:var(--text);
+  font-size:18px;font-weight:700;line-height:1;
+}
+.zoom-side button:first-child{border-bottom:1px solid var(--line-strong)}
+.zoom-side button:hover{background:rgba(255,255,255,.08);color:var(--gold)}
+.zoom-side button:active{background:rgba(255,255,255,.15)}
+
+/* ---------- overview page: hero + map ---------- */
+.ov-hero{border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+.ov-hero .big{width:100%;height:auto;max-height:540px;object-fit:contain;background:#0a1220;display:block;cursor:zoom-in}
+.ov-hero .strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:2px;background:var(--line)}
+.ov-hero .strip img{width:100%;aspect-ratio:4/3;object-fit:cover;cursor:pointer;transition:opacity .15s}
+.ov-hero .strip img:hover{opacity:.8}
+.ov-hero .strip .more{
+  display:flex;align-items:center;justify-content:center;background:var(--panel-2);
+  color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;
+}
+.ov-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start}
+.ov-map img{width:100%;border-radius:8px;display:block;aspect-ratio:16/10;object-fit:cover;background:#0b1218}
+.ov-map iframe{width:100%;aspect-ratio:16/10;border:0;border-radius:8px;display:block;background:#0b1218}
+.ov-map .pin-note{font-size:12px;color:var(--muted);margin-top:8px}
+.ov-kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;margin-top:6px}
+.ov-kv dt{color:var(--muted);font-size:12px;letter-spacing:.05em;text-transform:uppercase;font-family:'Rajdhani';font-weight:600;padding-top:2px}
+.ov-kv dd{margin:0}
+@media (max-width:820px){ .ov-grid{grid-template-columns:1fr} }
+
+/* ---------- thumb placeholder / previews ---------- */
+.thumb-empty{
+  width:100%;height:100%;display:flex;flex-direction:column;gap:6px;
+  align-items:center;justify-content:center;color:var(--muted);font-size:13px;
+}
+.thumb-empty .ico{font-size:26px;opacity:.6}
+.card .thumb video{width:100%;height:100%;object-fit:cover}
+.card .thumb img.fit{object-fit:contain;background:#0a1220}
+
+/* ---------- snapshots gallery ---------- */
+.snaps{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}
+.snaps .sn{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.snaps .sn img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;cursor:zoom-in}
+.snaps .sn .m{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px}
+.snaps .sn .t{font-family:var(--osd-font);font-size:10.5px;color:var(--muted)}
+
+/* ---------- drag & drop reorder ---------- */
+.card[draggable="true"]{cursor:grab}
+.card.dragging{opacity:.45}
+.card.drop-target{outline:2px dashed var(--gold);outline-offset:3px}
+
+/* ---------- manage / danger zone ---------- */
+.danger-zone{border:1px solid rgba(231,76,60,.4);background:rgba(231,76,60,.06)}
+.danger-zone h3{color:#ff8d78}
+.manage-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.manage-row:last-child{border-bottom:none}
+.manage-row .mr-name{font-weight:500}
+.manage-row .mr-sub{font-size:12.5px;color:var(--muted)}
+.confirm-type input{font-family:var(--osd-font)}
+
+@media (max-width:720px){
+  .page{padding:16px 12px 100px}
+  .page-head h1{font-size:21px}
+  .topbar{padding:8px 12px;gap:10px}
+  .topbar .who span{display:none}
+  .subbar{top:45px;padding:7px 12px}
+  .subbar .crumbs{font-size:12px}
+  .ov-hero .big{aspect-ratio:16/9}
+  .wall{grid-template-columns:1fr}
+  .osd{font-size:10.5px;padding:5px 8px;top:6px;right:6px}
+  .stage,.cmp-stage{aspect-ratio:auto;min-height:220px}
+  .stage{aspect-ratio:16/9}
+  .cmp-stage{aspect-ratio:16/9}
+  .modal .m-body{padding:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast-zone" id="toasts"></div>
+<script>
+/* =====================================================================
+   FalconViz TimeLapse System — single-file prototype
+   Data is stored in the browser (localStorage). This is a front-end
+   prototype: replace the localStorage layer with a real backend/API
+   (or hand this file to Lovable) for production.
+   ===================================================================== */
+
+/* ---------------- storage ---------------- */
+const DB_KEY = 'fvtl_db_v2';
+const SES_KEY = 'fvtl_session_v2';
+const mem = {};
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return mem[k]||null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ mem[k]=v; return false; } }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){ delete mem[k]; } }
+
+const uid = () => Math.random().toString(36).slice(2,10);
+const pad = n => String(n).padStart(2,'0');
+
+function seedDB(){
+  const pTL1 = uid(), pLV1 = uid(), pTL2 = uid(), pLV2 = uid();
+  const proj = uid(), locA = uid(), locB = uid();
+  return {
+    users:[
+      {id:uid(), name:'System Admin',  username:'admin',  password:'admin123',  role:'admin',  projects:[], cameras:[]},
+      {id:uid(), name:'Project Owner', username:'owner',  password:'owner123',  role:'owner',  projects:[], cameras:[]},
+      {id:uid(), name:'Client Viewer', username:'viewer', password:'viewer123', role:'viewer', projects:[proj], cameras:[]}
+    ],
+    projects:[{
+      id:proj,
+      name:'Demo Construction Project',
+      description:'Sample project seeded for testing. Two locations, each with one timelapse camera (5-minute interval, demo image feed) and one live stream camera (public test HLS stream). Replace with your real Oracle Cloud image URLs and .m3u8 links.',
+      locationDescription:'Coastal industrial site — Thuwal, Makkah Province, Saudi Arabia.',
+      mapsLink:'https://maps.google.com/?q=22.3095,39.1047',
+      clientLogo:'', images:[],
+      locations:[
+        {id:locA, name:'North Gate', cameras:[
+          {id:pTL1, type:'timelapse', name:'TL-CAM 01 — North Gate', mode:'demo', pattern:'', latestUrl:'', intervalMin:5},
+          {id:pLV1, type:'live', name:'LIVE-CAM 01 — North Gate', m3u8:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'}
+        ]},
+        {id:locB, name:'Batch Plant', cameras:[
+          {id:pTL2, type:'timelapse', name:'TL-CAM 02 — Batch Plant', mode:'demo', pattern:'', latestUrl:'', intervalMin:5},
+          {id:pLV2, type:'live', name:'LIVE-CAM 02 — Batch Plant', m3u8:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'}
+        ]}
+      ]
+    }]
+  };
+}
+let db;
+(function(){ const raw = lsGet(DB_KEY); if(raw){ try{ db = JSON.parse(raw); }catch(e){ db = seedDB(); } } else db = seedDB(); save(); })();
+let warnedQuota=false;
+function save(){
+  const ok = lsSet(DB_KEY, JSON.stringify(db));
+  if(!ok && !warnedQuota && typeof toast==='function'){ warnedQuota=true; toast('Browser storage is full — delete some snapshots or images, or data may not persist.', true); }
+}
+/* migrate older saved data */
+(function migrate(){
+  if(!db.alerts) db.alerts=[];
+  if(db.alertEmails===undefined) db.alertEmails='';
+  db.projects.forEach(p=>p.locations.forEach(l=>l.cameras.forEach(c=>{
+    if(c.type==='timelapse'){
+      if(c.alertsEnabled===undefined) c.alertsEnabled=true;
+      if(!c.alertThresholdMin) c.alertThresholdMin=60;
+    }
+  })));
+  save();
+})();
+
+/* theme */
+let theme = lsGet('fvtl_theme') || 'dark';
+document.documentElement.dataset.theme = theme;
+function toggleTheme(){
+  theme = theme==='dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = theme;
+  lsSet('fvtl_theme', theme);
+  render();
+}
+
+let session = null;
+(function(){ const raw = lsGet(SES_KEY); if(raw){ const id = JSON.parse(raw).id; session = db.users.find(u=>u.id===id) || null; } })();
+
+/* ---------------- routing state ---------------- */
+let route = { view:'dashboard', projectId:null, locationId:null, cameraId:null, ptab:'overview', ltab:'timelapse', ovMode:'view' };
+let timers = [];
+function clearTimers(){ timers.forEach(t=>clearInterval(t)); timers=[]; hlsInstances.forEach(h=>{try{h.destroy()}catch(e){}}); hlsInstances=[]; }
+let hlsInstances = [];
+function go(patch){ clearTimers(); route = Object.assign({}, route, patch); render(); window.scrollTo(0,0); }
+
+/* ---------------- permissions ---------------- */
+const isAdmin  = () => session && session.role==='admin';
+const isOwner  = () => session && (session.role==='admin' || session.role==='owner');
+const canEdit  = isOwner;
+function visibleProjects(){
+  if(!session) return [];
+  if(session.role!=='viewer') return db.projects;
+  return db.projects.filter(p=>
+    session.projects.includes(p.id) ||
+    (session.cameras||[]).length && p.locations.some(l=>l.cameras.some(c=>session.cameras.includes(c.id)))
+  );
+}
+function canSeeCamera(cam){
+  if(!session) return false;
+  if(session.role!=='viewer') return true;
+  if(!session.cameras || session.cameras.length===0) return true; // all cameras of allowed projects
+  return session.cameras.includes(cam.id);
+}
+function findProject(id){ return db.projects.find(p=>p.id===id); }
+function findLocation(p,id){ return p ? p.locations.find(l=>l.id===id) : null; }
+
+/* ---------------- helpers ---------------- */
+function esc(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDT(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function floorSlot(d, interval){ const x=new Date(d); x.setSeconds(0,0); x.setMinutes(Math.floor(x.getMinutes()/interval)*interval); return x; }
+function dateVal(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function timeVal(d){ return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function parseDT(dateStr,timeStr){ if(!dateStr||!timeStr) return null; const d=new Date(`${dateStr}T${timeStr}:00`); return isNaN(d)?null:d; }
+
+/* Find the nearest slot around a requested time that actually has an image.
+   Searches 0, -1, +1, -2, +2 ... intervals, up to maxSteps each direction. */
+async function nearestFrame(cam, want, maxSteps=12){
+  const interval = cam.intervalMin||5;
+  const base = floorSlot(want, interval);
+  if(cam.mode==='demo' || (!cam.pattern && !cam.latestUrl)) return base;
+  const offsets=[0];
+  for(let i=1;i<=maxSteps;i++){ offsets.push(-i, i); }
+  for(const o of offsets){
+    const d = new Date(base.getTime() + o*interval*60000);
+    if(d.getTime() > Date.now()) continue;
+    if(await probeImg(tlUrl(cam, d))) return d;
+  }
+  return null;
+}
+/* Resolve a timelapse image URL for a given camera + Date */
+function tlUrl(cam, d){
+  const slot = floorSlot(d, cam.intervalMin||5);
+  const t = {
+    '{YYYY}': slot.getFullYear(), '{YY}': String(slot.getFullYear()).slice(2),
+    '{MM}': pad(slot.getMonth()+1), '{DD}': pad(slot.getDate()),
+    '{HH}': pad(slot.getHours()), '{mm}': pad(slot.getMinutes()), '{ss}':'00',
+    '{EPOCH}': Math.floor(slot.getTime()/1000)
+  };
+  if(cam.mode==='demo' || (!cam.pattern && !cam.latestUrl)){
+    const seed = `${cam.id}-${t['{YYYY}']}${t['{MM}']}${t['{DD}']}${t['{HH}']}${t['{mm}']}`;
+    return `https://picsum.photos/seed/${seed}/1280/720`;
+  }
+  if(cam.mode==='latest' && cam.latestUrl) return cam.latestUrl + (cam.latestUrl.includes('?')?'&':'?') + '_ts=' + slot.getTime();
+  let u = cam.pattern||'';
+  for(const k in t) u = u.split(k).join(t[k]);
+  return u;
+}
+function tlLatest(cam){ return tlUrl(cam, new Date()); }
+
+/* ---------------- brand (official FalconViz logo assets, embedded) ---------------- */
+const FV_ICON = 'data:image/png;base64,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';
+const FV_LOGO = 'data:image/png;base64,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';
+function falconMark(size=30){
+  return `<img class="mark" src="${FV_ICON}" alt="FalconViz" style="height:${size}px;width:auto">`;
+}
+function brandHTML(withSub=true){
+  return `<div class="brand">${falconMark(30)}<div class="word">FalconViz${withSub?'<small>TimeLapse System</small>':''}</div></div>`;
+}
+/* full wordmark logo on a white plate (the brand blue needs a light background) */
+function brandFullHTML(h=42){
+  return `<div style="display:inline-block;background:#fff;border-radius:9px;padding:9px 16px"><img src="${FV_LOGO}" alt="FalconViz" style="height:${h}px;width:auto;display:block"></div>`;
+}
+
+/* ---------------- toast + modal ---------------- */
+function toast(msg, err=false){
+  const z = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast'+(err?' err':'');
+  t.textContent = msg;
+  z.appendChild(t);
+  setTimeout(()=>t.remove(), 3200);
+}
+function openModal(title, bodyHTML, footHTML, onMount){
+  closeModal();
+  const back = document.createElement('div');
+  back.className = 'modal-back'; back.id = 'modalBack';
+  back.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <div class="m-head"><h3>${esc(title)}</h3><button class="btn-ghost" onclick="closeModal()" aria-label="Close">✕</button></div>
+    <div class="m-body">${bodyHTML}</div>
+    ${footHTML?`<div class="m-foot">${footHTML}</div>`:''}
+  </div>`;
+  back.addEventListener('mousedown', e=>{ if(e.target===back) closeModal(); });
+  document.body.appendChild(back);
+  if(onMount) onMount(back);
+}
+function closeModal(){ const m=document.getElementById('modalBack'); if(m) m.remove(); }
+
+/* read a file input into a dataURL */
+function readImg(file, cb){
+  const r = new FileReader();
+  r.onload = () => cb(r.result);
+  r.readAsDataURL(file);
+}
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+const app = document.getElementById('app');
+
+function render(){
+  if(!session){ renderLogin(); return; }
+  const proj = route.projectId ? findProject(route.projectId) : null;
+  if(route.projectId && !proj){ route={view:'dashboard'}; }
+  let html = shellTop(proj) + shellSubbar(proj);
+  if(route.view==='dashboard') html += viewDashboard();
+  else if(route.view==='users') html += viewUsers();
+  else if(route.view==='project') html += viewProject(proj);
+  else if(route.view==='location') html += viewLocation(proj);
+  html += shellFoot();
+  app.innerHTML = html;
+  afterRender(proj);
+}
+
+/* ---------------- login ---------------- */
+function renderLogin(){
+  app.innerHTML = `
+  <div class="login-wrap">
+    <form class="login-card" onsubmit="doLogin(event)">
+      <div style="text-align:center;margin-bottom:12px">${brandFullHTML(34)}</div>
+      <div style="text-align:center;font-family:'Rajdhani';font-weight:700;font-size:14px;letter-spacing:.3em;color:var(--teal);text-transform:uppercase;margin-bottom:4px">TimeLapse System</div>
+      <p class="login-sub">Construction monitoring · timelapse & live cameras</p>
+      <div class="field"><label>Username</label><input id="lgU" autocomplete="username" required></div>
+      <div class="field"><label>Password</label><input id="lgP" type="password" autocomplete="current-password" required></div>
+      <button class="btn primary" style="width:100%;justify-content:center">Sign in</button>
+      <div class="login-demo">Demo accounts — <code>admin/admin123</code> · <code>owner/owner123</code> · <code>viewer/viewer123</code></div>
+    </form>
+  </div>`;
+}
+function doLogin(e){
+  e.preventDefault();
+  const u = document.getElementById('lgU').value.trim();
+  const p = document.getElementById('lgP').value;
+  const user = db.users.find(x=>x.username===u && x.password===p);
+  if(!user){ toast('Wrong username or password', true); return; }
+  session = user; lsSet(SES_KEY, JSON.stringify({id:user.id}));
+  route = {view:'dashboard'}; render();
+}
+function doLogout(){ session=null; lsDel(SES_KEY); clearTimers(); route={view:'dashboard'}; render(); }
+
+/* ---------------- shell ---------------- */
+function shellTop(proj){
+  const logo = proj && proj.clientLogo
+    ? `<img class="client-logo" src="${proj.clientLogo}" alt="Client logo">`
+    : brandHTML(true);
+  return `
+  <header class="topbar">
+    ${logo}
+    <div class="spacer"></div>
+    <button class="btn sm icon" onclick="toggleTheme()" title="Switch light/dark mode">${theme==='dark'?'☀':'🌙'}</button>
+    ${isOwner()?`<button class="btn sm" id="alertBell" onclick="modalAlerts()" title="Camera alerts">${bellHTML()}</button>`:''}
+    ${isOwner()?`<button class="btn sm" onclick="go({view:'users',projectId:null,locationId:null})">Users</button>`:''}
+    <div class="who"><b>${esc(session.name)}</b><span>${session.role}</span></div>
+    <button class="btn sm" onclick="doLogout()">Sign out</button>
+  </header>`;
+}
+/* dedicated bar for back-navigation + breadcrumbs, sits right above the page title
+   so users can retrace Projects → Project → Location without hunting for it */
+function shellSubbar(proj){
+  let crumbs = `<a href="#" onclick="go({view:'dashboard',projectId:null,locationId:null});return false">Projects</a>`;
+  let backPatch = {view:'dashboard', projectId:null, locationId:null};
+  if(proj){
+    crumbs += `<span class="sep">›</span><a href="#" onclick="go({view:'project',ptab:'overview',ovMode:'view'});return false">${esc(proj.name)}</a>`;
+    backPatch = {view:'project', ptab:'overview', ovMode:'view'};
+    if(route.view==='location'){
+      const loc = findLocation(proj, route.locationId);
+      if(loc) crumbs += `<span class="sep">›</span><span class="here">${esc(loc.name)}</span>`;
+      backPatch = {view:'project', ptab:'locations'};
+    } else if(route.view==='project'){
+      backPatch = {view:'dashboard', projectId:null, locationId:null};
+    }
+  } else if(route.view==='users'){
+    crumbs += `<span class="sep">›</span><span class="here">User Management</span>`;
+  }
+  const showBack = proj || route.view==='users';
+  return `
+  <div class="subbar">
+    ${showBack?`<button class="back-btn" onclick='go(${JSON.stringify(backPatch)})'>← Back</button>`:''}
+    <nav class="crumbs">${crumbs}</nav>
+  </div>`;
+}
+function shellFoot(){
+  return `<div class="footer">${falconMark(16)} Powered by FalconViz</div>`;
+}
+
+/* ---------------- dashboard ---------------- */
+function viewDashboard(){
+  const list = visibleProjects();
+  return `<main class="page">
+    <div class="page-head">
+      <div><h1>Projects</h1><div class="sub">${list.length} project${list.length===1?'':'s'} · signed in as ${esc(session.name)}</div></div>
+      ${canEdit()?`<button class="btn primary" onclick="modalProject()">＋ New project</button>`:''}
+    </div>
+    ${list.length? `<div class="grid projects">${list.map(p=>projectCard(p)).join('')}</div>`
+      : `<div class="empty">No projects yet.${canEdit()?' Create your first project to start adding locations and cameras.':' Ask an administrator to grant you access to a project.'}</div>`}
+  </main>`;
+}
+function projectCard(p){
+  const nLoc = p.locations.length;
+  const cams = p.locations.flatMap(l=>l.cameras);
+  const tl = cams.filter(c=>c.type==='timelapse').length;
+  const lv = cams.filter(c=>c.type==='live').length;
+  const firstTL = cams.find(c=>c.type==='timelapse');
+  const thumb = p.coverImage
+    ? `<img class="fit" loading="lazy" src="${p.coverImage}" alt="">`
+    : firstTL ? `<img loading="lazy" src="${esc(tlLatest(firstTL))}" alt="">`
+    : `<div class="thumb-empty"><span class="ico">🏗</span>No cover image yet${canEdit()?'<span style="font-size:11.5px">Upload one in Overview → Edit details</span>':''}</div>`;
+  return `<div class="card click" onclick="go({view:'project',projectId:'${p.id}',ptab:'overview',ovMode:'view'})">
+    <div class="thumb">${thumb}${p.clientLogo?`<img src="${p.clientLogo}" alt="" style="position:absolute;top:8px;left:8px;height:28px;width:auto;background:#fff;border-radius:5px;padding:2px 5px">`:''}</div>
+    <div class="body">
+      <h3>${esc(p.name)}</h3>
+      <p>${esc((p.description||'').slice(0,90))}${(p.description||'').length>90?'…':''}</p>
+      <div class="meta">
+        <span class="chip">${nLoc} location${nLoc===1?'':'s'}</span>
+        <span class="chip gold">${tl} timelapse</span>
+        <span class="chip live">${lv} live</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- user management ---------------- */
+function viewUsers(){
+  if(!isOwner()) return `<main class="page"><div class="empty">You don't have permission to manage users.</div></main>`;
+  return `<main class="page">
+    <div class="page-head">
+      <div><h1>User Management</h1><div class="sub">Admins and project owners can create users. Viewers cannot create accounts.</div></div>
+      <button class="btn primary" onclick="modalUser()">＋ Add user</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Access</th><th style="width:130px"></th></tr></thead>
+      <tbody>${db.users.map(u=>{
+        let access = 'All projects';
+        if(u.role==='viewer'){
+          const names = u.projects.map(id=>{const p=findProject(id);return p?p.name:null}).filter(Boolean);
+          access = names.length? names.join(', ') : '— no projects assigned —';
+          if(u.cameras && u.cameras.length) access += ` · ${u.cameras.length} selected camera(s)`;
+        }
+        const canDel = isAdmin() || u.role==='viewer';
+        return `<tr>
+          <td>${esc(u.name)}</td>
+          <td><code style="font-family:var(--osd-font);font-size:13px">${esc(u.username)}</code></td>
+          <td><span class="chip ${u.role==='admin'?'gold':''}">${u.role}</span></td>
+          <td style="color:var(--muted);font-size:13px">${esc(access)}</td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="btn sm" onclick="modalUser('${u.id}')">Edit</button>
+            ${u.id!==session.id && canDel?`<button class="btn sm danger" onclick="delUser('${u.id}')">Delete</button>`:''}
+          </td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+  </main>`;
+}
+function accessChecklist(u){
+  return db.projects.map(p=>{
+    const pc = `<label><input type="checkbox" class="uProj" value="${p.id}" ${u&&u.projects.includes(p.id)?'checked':''}> ${esc(p.name)} <span style="color:var(--muted)">(whole project)</span></label>`;
+    const cams = p.locations.flatMap(l=>l.cameras.map(c=>({...c, locName:l.name})));
+    const cc = cams.map(c=>`<label style="margin-left:18px"><input type="checkbox" class="uCam" value="${c.id}" ${u&&u.cameras&&u.cameras.includes(c.id)?'checked':''}> ${esc(c.locName)} — ${esc(c.name)}</label>`).join('');
+    return `<div class="grp">${esc(p.name)}</div>${pc}${cc}`;
+  }).join('') || '<span style="color:var(--muted)">No projects exist yet.</span>';
+}
+function modalUser(id){
+  const u = id ? db.users.find(x=>x.id===id) : null;
+  const roleOpts = isAdmin()
+    ? `<option value="admin">Admin — full control</option><option value="owner">Project Owner — manage projects & users</option><option value="viewer">Viewer — view only</option>`
+    : `<option value="viewer">Viewer — view only</option>${u&&u.role!=='viewer'?`<option value="${u.role}" selected>${u.role}</option>`:''}`;
+  openModal(u?'Edit user':'Add user', `
+    <div class="row">
+      <div class="field"><label>Full name</label><input id="usN" value="${u?esc(u.name):''}"></div>
+      <div class="field"><label>Username</label><input id="usU" value="${u?esc(u.username):''}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Password ${u?'(leave blank to keep)':''}</label><input id="usP" type="password"></div>
+      <div class="field"><label>Role</label><select id="usR" onchange="document.getElementById('usAccess').style.display=this.value==='viewer'?'':'none'">${roleOpts}</select></div>
+    </div>
+    <div id="usAccess" style="display:none">
+      <label>Viewer access — tick whole projects and/or individual cameras.<br><span style="text-transform:none;letter-spacing:0">Ticking only specific cameras (without the whole project) gives the viewer access to just those cameras — they will still see the project but only with those cameras inside. If no cameras are ticked, the viewer sees every camera in their assigned projects.</span></label>
+      <div class="checklist">${accessChecklist(u)}</div>
+    </div>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveUser('${id||''}')">Save user</button>`,
+    (m)=>{ const sel=m.querySelector('#usR'); if(u) sel.value=u.role; sel.dispatchEvent(new Event('change')); }
+  );
+}
+function saveUser(id){
+  const name = document.getElementById('usN').value.trim();
+  const un = document.getElementById('usU').value.trim();
+  const pw = document.getElementById('usP').value;
+  const role = document.getElementById('usR').value;
+  if(!name||!un){ toast('Name and username are required', true); return; }
+  if(db.users.some(x=>x.username===un && x.id!==id)){ toast('Username already exists', true); return; }
+  const projects = [...document.querySelectorAll('.uProj:checked')].map(i=>i.value);
+  const cameras  = [...document.querySelectorAll('.uCam:checked')].map(i=>i.value);
+  if(id){
+    const u = db.users.find(x=>x.id===id);
+    Object.assign(u, {name, username:un, role, projects, cameras});
+    if(pw) u.password = pw;
+    if(session.id===u.id) session=u;
+  } else {
+    if(!pw){ toast('Password is required for new users', true); return; }
+    db.users.push({id:uid(), name, username:un, password:pw, role, projects, cameras});
+  }
+  save(); closeModal(); toast('User saved'); render();
+}
+function delUser(id){
+  const u = db.users.find(x=>x.id===id);
+  if(!confirm(`Delete user "${u.name}"?`)) return;
+  db.users = db.users.filter(x=>x.id!==id); save(); toast('User deleted'); render();
+}
+/* ---------------- project view ---------------- */
+function viewProject(p){
+  const tabs = [
+    ['overview','Overview'], ['locations','Locations'],
+    ['tlwall','Timelapse Wall'], ['livewall','Live Wall']
+  ];
+  if(canEdit()) tabs.push(['manage','Manage Project']);
+  let body='';
+  if(route.ptab==='overview') body = projOverview(p);
+  else if(route.ptab==='locations') body = projLocations(p);
+  else if(route.ptab==='tlwall') body = projTLWall(p);
+  else if(route.ptab==='livewall') body = projLiveWall(p);
+  else if(route.ptab==='manage') body = canEdit() ? projManage(p) : `<div class="empty">You don't have permission to manage this project.</div>`;
+  return `<main class="page">
+    <div class="page-head">
+      <div><h1>${esc(p.name)}</h1><div class="sub">${esc(p.locationDescription||'')}</div></div>
+    </div>
+    <div class="tabs">${tabs.map(t=>`<button class="tab ${route.ptab===t[0]?'active':''}" onclick="go({ptab:'${t[0]}'${t[0]==='overview'?",ovMode:'view'":''}})">${t[1]}</button>`).join('')}</div>
+    ${body}
+  </main>`;
+}
+
+/* extract lat,lng from a pasted Google Maps link so we can render a map snapshot */
+function extractLatLng(link){
+  if(!link) return null;
+  const m = link.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/)
+        || link.match(/[?&]q=(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/)
+        || link.match(/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/)
+        || link.match(/(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+  if(!m) return null;
+  const lat=parseFloat(m[1]), lng=parseFloat(m[2]);
+  if(isNaN(lat)||isNaN(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return null;
+  return {lat,lng};
+}
+function projectLatLng(p){ return extractLatLng(p.coords) || extractLatLng(p.mapsLink); }
+function isShortMapsLink(link){ return /maps\.app\.goo\.gl|goo\.gl\/maps/.test(link||''); }
+function mapEmbedUrl(lat,lng,zoom=16){
+  /* Google Maps embed — works without an API key; t=k gives satellite view (best for construction sites) */
+  return `https://maps.google.com/maps?q=${lat},${lng}&z=${zoom}&t=k&output=embed`;
+}
+function lightbox(src){ openModal('Project image', `<img src="${src}" alt="" style="width:100%;border-radius:8px;display:block">`, ''); }
+function viewAllImages(pid){
+  const p=findProject(pid);
+  openModal('All project images', `<div class="gallery">${p.images.map(im=>`<div class="g"><img src="${im}" alt="" style="cursor:zoom-in" onclick="lightbox('${im}')"></div>`).join('')}</div>`, '');
+}
+/* large banner + thumbnail strip at the top of Overview, so executives immediately see the site */
+function ovHero(p){
+  const imgs = p.images||[];
+  if(!imgs.length) return '';
+  const rest = imgs.slice(1,7);
+  const remaining = imgs.length - 1 - rest.length;
+  return `<div class="ov-hero" style="margin-bottom:16px">
+    <img class="big" src="${imgs[0]}" alt="Project site" onclick="lightbox('${imgs[0]}')" style="cursor:zoom-in">
+    ${rest.length?`<div class="strip">
+      ${rest.map(im=>`<img src="${im}" alt="" onclick="lightbox('${im}')">`).join('')}
+      ${remaining>0?`<div class="more" onclick="viewAllImages('${p.id}')">+${remaining} more</div>`:''}
+    </div>`:''}
+  </div>`;
+}
+function projOverview(p){
+  const editing = canEdit() && route.ovMode==='edit';
+  const loc = projectLatLng(p);
+  return `
+  ${ovHero(p)}
+  <div class="ov-grid">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">
+        <h3 style="margin-bottom:0">Project details</h3>
+        ${canEdit()? (editing
+           ? `<button class="btn sm" onclick="go({ovMode:'view'})">Cancel</button>`
+           : `<button class="btn sm" onclick="go({ovMode:'edit'})">✎ Edit details</button>`)
+          : ''}
+      </div>
+      ${editing?`
+      <div class="field"><label>Project name</label><input id="ovName" value="${esc(p.name)}"></div>
+      <div class="field"><label>Description</label><textarea id="ovDesc" rows="3">${esc(p.description||'')}</textarea></div>
+      <div class="field"><label>Location description</label><textarea id="ovLocDesc" rows="2">${esc(p.locationDescription||'')}</textarea></div>
+      <div class="field"><label>Google Maps link</label><input id="ovMaps" value="${esc(p.mapsLink||'')}" placeholder="https://maps.google.com/?q=22.3095,39.1047 or a maps.app.goo.gl link"></div>
+      <div class="field"><label>Site coordinates (lat, lng)</label><input id="ovCoords" value="${esc(p.coords||'')}" placeholder="21.42250, 39.82620">
+        <div class="hint">Needed for the map snapshot when the maps link is a short link (maps.app.goo.gl) that hides the coordinates. To get them: open your maps link, right-click the site pin, and click the coordinates at the top of the menu to copy them — then paste here.</div>
+      </div>
+      <div class="field"><label>Project card cover image</label>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          ${p.coverImage?`<img src="${p.coverImage}" alt="" style="height:52px;border-radius:6px;border:1px solid var(--line)">`:'<span class="chip">Using latest camera image</span>'}
+          <label class="btn sm" style="margin:0"><input type="file" accept="image/*" style="display:none" onchange="uploadCover(event,'${p.id}')">Upload cover</label>
+          ${p.coverImage?`<button class="btn sm danger" onclick="removeCover('${p.id}')">Remove</button>`:''}
+        </div>
+        <div class="hint">Shown on the project card in the Projects list, centered and fitted to the frame.</div>
+      </div>
+      <button class="btn primary" onclick="saveOverview('${p.id}')">Save details</button>`
+      :`
+      <dl class="ov-kv">
+        <dt>Description</dt><dd>${p.description?esc(p.description):'<span style="color:var(--muted)">Not set</span>'}</dd>
+        <dt>Location</dt><dd>${p.locationDescription?esc(p.locationDescription):'<span style="color:var(--muted)">Not set</span>'}</dd>
+      </dl>`}
+
+      ${canEdit()?`
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
+        <h3 style="font-size:14px;margin-bottom:10px">Client logo</h3>
+        <p class="hint" style="margin-bottom:10px">Shown top-left across this project. FalconViz branding moves to the “Powered by FalconViz” badge, bottom-right.</p>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          ${p.clientLogo?`<img class="client-logo" src="${p.clientLogo}" alt="Client logo" style="height:44px">`:'<span class="chip">No logo uploaded</span>'}
+          <label class="btn sm" style="margin:0"><input type="file" accept="image/*" style="display:none" onchange="uploadLogo(event,'${p.id}')">Upload logo</label>
+          ${p.clientLogo?`<button class="btn sm danger" onclick="removeLogo('${p.id}')">Remove</button>`:''}
+        </div>
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
+        <h3 style="font-size:14px;margin-bottom:10px">Project images (site layout)</h3>
+        <p class="hint" style="margin-bottom:10px">The first image becomes the large banner at the top of this page.</p>
+        <label class="btn sm" style="margin-bottom:12px"><input type="file" accept="image/*" multiple style="display:none" onchange="uploadGallery(event,'${p.id}')">＋ Add images</label>
+        ${p.images&&p.images.length? `<div class="gallery">${p.images.map((im,i)=>`<div class="g"><img src="${im}" alt=""><button class="x" onclick="delGalleryImg('${p.id}',${i})">✕</button></div>`).join('')}</div>`
+          : `<div class="empty" style="padding:22px">No images attached yet.</div>`}
+      </div>`:''}
+    </div>
+
+    <div class="panel ov-map">
+      <h3>Site location</h3>
+      ${loc? `
+        <iframe src="${mapEmbedUrl(loc.lat,loc.lng)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen title="Site map"></iframe>
+        <p class="pin-note">📍 ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)} · satellite view, zoom & pan inside the map</p>
+        ${p.mapsLink?`<a class="btn sm" style="margin-top:8px" href="${esc(p.mapsLink)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>`:''}`
+      : p.mapsLink ? `
+        <div class="empty" style="padding:22px">${isShortMapsLink(p.mapsLink)
+          ? 'Short Google Maps links (maps.app.goo.gl) hide the coordinates.'+(canEdit()?' Click <b>Edit details</b> and paste the site coordinates (open the link, right-click the pin, copy the lat/lng shown at the top of the menu).':'')
+          : "Couldn't read coordinates from this link."+(canEdit()?' Add them in Edit details → Site coordinates.':'')}</div>
+        <a class="btn sm" style="margin-top:8px" href="${esc(p.mapsLink)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>`
+      : `
+        <div class="empty" style="padding:26px">${canEdit()?'Add a Google Maps link (with coordinates) in Edit details to show a map snapshot here.':'No location link set for this project.'}</div>`}
+    </div>
+  </div>`;
+}
+function saveOverview(pid){
+  const p = findProject(pid);
+  p.name = document.getElementById('ovName').value.trim() || p.name;
+  p.description = document.getElementById('ovDesc').value;
+  p.locationDescription = document.getElementById('ovLocDesc').value;
+  p.mapsLink = document.getElementById('ovMaps').value.trim();
+  p.coords = document.getElementById('ovCoords').value.trim();
+  save(); toast('Project details saved');
+  go({ovMode:'view'});
+}
+function uploadCover(e,pid){ const f=e.target.files[0]; if(!f) return; readImg(f, d=>{ findProject(pid).coverImage=d; save(); toast('Cover image updated'); render(); }); }
+function removeCover(pid){ findProject(pid).coverImage=''; save(); render(); }
+function uploadLogo(e,pid){ const f=e.target.files[0]; if(!f) return; readImg(f, d=>{ findProject(pid).clientLogo=d; save(); toast('Client logo updated'); render(); }); }
+function removeLogo(pid){ findProject(pid).clientLogo=''; save(); render(); }
+function uploadGallery(e,pid){
+  const p=findProject(pid); const files=[...e.target.files]; if(!files.length) return;
+  let left=files.length;
+  files.forEach(f=>readImg(f,d=>{ p.images.push(d); if(--left===0){ save(); toast('Images added'); render(); } }));
+}
+function delGalleryImg(pid,i){ const p=findProject(pid); p.images.splice(i,1); save(); render(); }
+
+function modalProject(){
+  openModal('New project', `
+    <div class="field"><label>Project name</label><input id="npName" placeholder="e.g. Red Sea Terminal — Phase 2"></div>
+    <div class="field"><label>Description</label><textarea id="npDesc" rows="3"></textarea></div>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="createProject()">Create project</button>`);
+}
+function createProject(){
+  const name = document.getElementById('npName').value.trim();
+  if(!name){ toast('Project name is required', true); return; }
+  const p = {id:uid(), name, description:document.getElementById('npDesc').value, locationDescription:'', mapsLink:'', clientLogo:'', images:[], locations:[]};
+  db.projects.push(p); save(); closeModal(); toast('Project created');
+  go({view:'project', projectId:p.id, ptab:'overview', ovMode:'view'});
+}
+
+/* ---------------- strict, typed-confirmation deletes (Manage Project tab only) ---------------- */
+function openTypedConfirm(title, warnHTML, expected, onConfirmCall){
+  openModal(title, `
+    <p style="margin-bottom:14px">${warnHTML}</p>
+    <div class="field confirm-type"><label>Type "<b>${esc(expected)}</b>" to confirm</label><input id="dtInput" autocomplete="off" placeholder="${esc(expected)}"></div>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" id="dtConfirmBtn" disabled onclick="${onConfirmCall}">Delete permanently</button>`,
+    (m)=>{
+      const inp=m.querySelector('#dtInput'), btn=m.querySelector('#dtConfirmBtn');
+      inp.addEventListener('input', ()=>{ btn.disabled = inp.value.trim() !== expected; });
+      inp.focus();
+    });
+}
+function confirmDeleteProject(pid){
+  const p=findProject(pid);
+  openTypedConfirm('Delete project', `This permanently deletes <b>"${esc(p.name)}"</b>, all of its locations, cameras, images, and gallery. This cannot be undone.`, p.name, `doDeleteProject('${pid}')`);
+}
+function doDeleteProject(pid){
+  db.projects = db.projects.filter(x=>x.id!==pid); save(); closeModal(); toast('Project deleted');
+  go({view:'dashboard', projectId:null, locationId:null});
+}
+function confirmDeleteLocation(pid,lid){
+  const l=findLocation(findProject(pid),lid);
+  openTypedConfirm('Delete location', `This permanently deletes <b>"${esc(l.name)}"</b> and its ${l.cameras.length} camera(s). This cannot be undone.`, l.name, `doDeleteLocation('${pid}','${lid}')`);
+}
+function doDeleteLocation(pid,lid){
+  const p=findProject(pid);
+  p.locations = p.locations.filter(x=>x.id!==lid); save(); closeModal(); toast('Location deleted'); render();
+}
+function confirmDeleteCamera(pid,lid,cid){
+  const l=findLocation(findProject(pid),lid); const c=l.cameras.find(x=>x.id===cid);
+  openTypedConfirm('Delete camera', `This permanently deletes <b>"${esc(c.name)}"</b>. This cannot be undone.`, c.name, `doDeleteCamera('${pid}','${lid}','${cid}')`);
+}
+function doDeleteCamera(pid,lid,cid){
+  const l=findLocation(findProject(pid),lid);
+  l.cameras = l.cameras.filter(x=>x.id!==cid); save(); closeModal(); toast('Camera deleted'); render();
+}
+
+/* ---------------- Manage Project tab (Danger Zone lives here only) ---------------- */
+function projManage(p){
+  const locRows = p.locations.map(l=>{
+    const camRows = l.cameras.map(c=>`
+      <div class="manage-row">
+        <div><div class="mr-name">${esc(c.name)}</div><div class="mr-sub">${c.type==='live'?'Live streaming camera':'Timelapse camera'}</div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn sm" onclick="modalCamera('${p.id}','${l.id}','${c.id}')">Settings</button>
+          <button class="btn sm danger" onclick="confirmDeleteCamera('${p.id}','${l.id}','${c.id}')">Delete</button>
+        </div>
+      </div>`).join('');
+    return `
+    <div class="panel" style="margin-bottom:14px">
+      <div class="manage-row" style="border-bottom:1px solid var(--line-strong);padding-bottom:12px;margin-bottom:2px">
+        <div><div class="mr-name" style="font-size:16px">${esc(l.name)}</div><div class="mr-sub">${l.cameras.length} camera(s)</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn sm" onclick="modalLocation('${p.id}','${l.id}')">⚙ Settings</button>
+          ${missingCamTypes(l).length?`<button class="btn sm" onclick="modalCamera('${p.id}','${l.id}')">＋ Add camera</button>`:''}
+          <button class="btn sm danger" onclick="confirmDeleteLocation('${p.id}','${l.id}')">Delete location</button>
+        </div>
+      </div>
+      ${camRows || '<p class="hint" style="padding-top:8px">No cameras at this location.</p>'}
+    </div>`;
+  }).join('') || '<div class="empty">No locations yet.</div>';
+
+  return `
+    <div style="margin-bottom:14px"><button class="btn primary sm" onclick="modalLocation('${p.id}')">＋ Add location</button></div>
+    <h3 style="font-size:14px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px">Locations & Cameras</h3>
+    ${locRows}
+    <div class="panel danger-zone" style="margin-top:8px">
+      <h3>Danger Zone</h3>
+      <div class="manage-row">
+        <div><div class="mr-name">Delete this entire project</div><div class="mr-sub">Removes all locations, cameras, images, and history. Cannot be undone.</div></div>
+        <button class="btn sm danger" onclick="confirmDeleteProject('${p.id}')">Delete project</button>
+      </div>
+    </div>`;
+}
+
+/* ---------------- locations tab ---------------- */
+function missingCamTypes(l){
+  const types=[];
+  if(!l.cameras.some(c=>c.type==='timelapse')) types.push('timelapse');
+  if(!l.cameras.some(c=>c.type==='live')) types.push('live');
+  return types;
+}
+function projLocations(p){
+  return `
+    ${canEdit()?`<div style="margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn primary" onclick="modalLocation('${p.id}')">＋ Add location</button>
+      <button class="btn sm" onclick="sortLocationsByName('${p.id}')">↕ Sort by name</button>
+      <span class="hint" style="margin:0">Drag cards to arrange your own order — it is saved automatically.</span>
+    </div>`:''}
+    ${p.locations.length? `<div class="grid cams" id="locGrid">${p.locations.map(l=>locationCard(p,l)).join('')}</div>`
+      :`<div class="empty">No locations yet.${canEdit()?' Add a location, then attach timelapse and live cameras to it.':''}</div>`}`;
+}
+function sortLocationsByName(pid){
+  const p=findProject(pid);
+  p.locations.sort((a,b)=>a.name.localeCompare(b.name, undefined, {numeric:true}));
+  save(); toast('Locations sorted by name'); render();
+}
+function initLocationDrag(){
+  const grid=document.getElementById('locGrid');
+  if(!grid || !canEdit()) return;
+  let dragId=null;
+  grid.querySelectorAll('.card[data-lid]').forEach(card=>{
+    card.setAttribute('draggable','true');
+    card.addEventListener('dragstart', e=>{ dragId=card.dataset.lid; card.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+    card.addEventListener('dragend', ()=>{ card.classList.remove('dragging'); grid.querySelectorAll('.drop-target').forEach(x=>x.classList.remove('drop-target')); });
+    card.addEventListener('dragover', e=>{ e.preventDefault(); if(card.dataset.lid!==dragId) card.classList.add('drop-target'); });
+    card.addEventListener('dragleave', ()=>card.classList.remove('drop-target'));
+    card.addEventListener('drop', e=>{
+      e.preventDefault();
+      const targetId=card.dataset.lid;
+      if(!dragId || dragId===targetId) return;
+      const p=findProject(route.projectId);
+      const from=p.locations.findIndex(l=>l.id===dragId);
+      const to=p.locations.findIndex(l=>l.id===targetId);
+      const [moved]=p.locations.splice(from,1);
+      p.locations.splice(to,0,moved);
+      save(); toast('Order saved'); render();
+    });
+  });
+}
+function locationCard(p,l){
+  const cams = l.cameras.filter(canSeeCamera);
+  const tl = cams.find(c=>c.type==='timelapse');
+  const lv = cams.find(c=>c.type==='live');
+  /* thumb priority: manual cover (fixed, no bandwidth) → timelapse latest → last live snapshot → placeholder.
+     Live streams are intentionally never loaded here to save bandwidth. */
+  let thumb;
+  if(l.cover) thumb = `<img class="fit" loading="lazy" src="${l.cover}" alt="">`;
+  else if(tl) thumb = `<img loading="lazy" src="${esc(tlLatest(tl))}" alt="">`;
+  else if(lv && lv.snapshots && lv.snapshots.length) thumb = `<img loading="lazy" src="${lv.snapshots[lv.snapshots.length-1].data}" alt="">`;
+  else thumb = `<div class="thumb-empty"><span class="ico">📷</span>No preview yet${canEdit()?'<span style="font-size:11.5px">Add a camera, or set a cover in Settings</span>':''}</div>`;
+  const missing = missingCamTypes(l);
+  return `<div class="card" data-lid="${l.id}">
+    <div class="thumb click" onclick="go({view:'location',locationId:'${l.id}',ltab:'timelapse'})">${thumb}</div>
+    <div class="body">
+      <h3 class="click" style="cursor:pointer" onclick="go({view:'location',locationId:'${l.id}',ltab:'timelapse'})">${esc(l.name)}</h3>
+      <div class="meta">
+        ${cams.map(c=>`<span class="chip ${c.type==='live'?'live':'gold'}">${esc(c.name)}</span>`).join('')||'<span class="chip">No cameras</span>'}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn sm" onclick="go({view:'location',locationId:'${l.id}',ltab:'timelapse'})">Open location</button>
+        ${canEdit()&&missing.length?`
+          <button class="btn sm" onclick="modalCamera('${p.id}','${l.id}')">＋ Camera</button>`:''}
+        ${canEdit()?`
+          <button class="btn sm" onclick="modalLocation('${p.id}','${l.id}')">⚙ Settings</button>`:''}
+      </div>
+      ${canEdit()?`<p class="hint" style="margin-top:8px">To delete this location or its cameras, go to <a href="#" onclick="go({ptab:'manage'});return false">Manage Project</a>.</p>`:''}
+    </div>
+  </div>`;
+}
+function modalLocation(pid, lid){
+  const l = lid ? findLocation(findProject(pid), lid) : null;
+  openModal(l?'Location settings':'Add location',
+    `<div class="field"><label>Location name</label><input id="locName" value="${l?esc(l.name):''}" placeholder="e.g. North Gate, Tower B, Batch Plant"></div>
+     ${l?`<div class="field"><label>Location cover image</label>
+       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+         ${l.cover?`<img src="${l.cover}" alt="" style="height:52px;border-radius:6px;border:1px solid var(--line)">`:'<span class="chip">Using latest camera image</span>'}
+         <label class="btn sm" style="margin:0"><input type="file" accept="image/*" style="display:none" onchange="uploadLocCover(event,'${pid}','${lid}')">Upload cover</label>
+         ${l.cover?`<button class="btn sm danger" onclick="removeLocCover('${pid}','${lid}')">Remove</button>`:''}
+       </div>
+       <div class="hint">If set, this fixed image is shown on the location card — the system will not fetch the latest timelapse image for the card. Remove it to go back to automatic latest-image previews.</div>
+     </div>`:''}`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveLocation('${pid}','${lid||''}')">Save</button>`);
+}
+function uploadLocCover(e,pid,lid){
+  const f=e.target.files[0]; if(!f) return;
+  readImg(f, d=>{ findLocation(findProject(pid),lid).cover=d; save(); toast('Location cover updated'); modalLocation(pid,lid); render(); });
+}
+function removeLocCover(pid,lid){
+  findLocation(findProject(pid),lid).cover=''; save(); toast('Cover removed — card will show the latest camera image'); modalLocation(pid,lid); render();
+}
+function saveLocation(pid, lid){
+  const name = document.getElementById('locName').value.trim();
+  if(!name){ toast('Name is required', true); return; }
+  const p = findProject(pid);
+  if(lid){ findLocation(p,lid).name = name; } else { p.locations.push({id:uid(), name, cameras:[]}); }
+  save(); closeModal(); toast('Location saved'); render();
+}
+function delLocation(pid,lid){ confirmDeleteLocation(pid,lid); } /* legacy alias, routes to strict confirm */
+
+/* ---------------- camera config ---------------- */
+function modalCamera(pid, lid, cid){
+  const p=findProject(pid), l=findLocation(p,lid);
+  const c = cid ? l.cameras.find(x=>x.id===cid) : null;
+  openModal(c?'Camera settings':'Add camera', `
+    <div class="field"><label>Camera name</label><input id="cmName" value="${c?esc(c.name):''}" placeholder="e.g. TL-CAM 03 — East Elevation"></div>
+    <div class="field"><label>Camera type</label>
+      <select id="cmType" onchange="cmTypeChange()" ${c?'disabled':''}>
+        ${(c?['timelapse','live']:missingCamTypes(l)).map(t=>`<option value="${t}">${t==='timelapse'?'Timelapse camera (images every 5 min → Oracle Cloud)':'Live streaming camera (.m3u8 HLS link)'}</option>`).join('')}
+      </select>
+      ${c?'':'<div class="hint">Each location can have one timelapse camera and one live streaming camera.</div>'}
+    </div>
+    <div id="cmTL">
+      <div class="field"><label>Source mode</label>
+        <select id="cmMode" onchange="cmModeChange()">
+          <option value="pattern">URL pattern with date/time tokens</option>
+          <option value="latest">Single “latest image” URL</option>
+          <option value="demo">Demo feed (placeholder images, for testing)</option>
+        </select>
+      </div>
+      <div class="field" id="cmPatternF"><label>Image URL pattern</label>
+        <input id="cmPattern" value="${c&&c.pattern?esc(c.pattern):''}" placeholder="https://objectstorage.../{YYYY}/{MM}/{DD}/{YYYY}{MM}{DD}_{HH}{mm}.jpg">
+        <div class="hint">Tokens: {YYYY} {YY} {MM} {DD} {HH} {mm} {EPOCH}. The system rounds the requested time down to the capture interval and fills the tokens to build the Oracle Cloud object URL. For a <b>private bucket</b>, create a read-only Pre-Authenticated Request (PAR) in the OCI console and use the PAR URL as the base of this pattern.</div>
+      </div>
+      <div class="field" id="cmLatestF" style="display:none"><label>Latest image URL</label>
+        <input id="cmLatest" value="${c&&c.latestUrl?esc(c.latestUrl):''}" placeholder="https://objectstorage.../latest.jpg">
+        <div class="hint">Used when the camera always overwrites one “latest” object. Compare and video generation need the URL-pattern mode.</div>
+      </div>
+      <div class="field"><label>Capture interval (minutes)</label><input id="cmInt" type="number" min="1" max="120" value="${c&&c.intervalMin?c.intervalMin:5}"></div>
+      <div class="row">
+        <div class="field"><label>Health check — alert if no new image for (min)</label>
+          <input id="cmThresh" type="number" min="5" max="1440" value="${c&&c.alertThresholdMin?c.alertThresholdMin:60}">
+          <div class="hint">Example: camera captures every 10 min → alert after 60 min without images.</div>
+        </div>
+        <div class="field"><label>Alerts</label>
+          <select id="cmAlerts"><option value="1">Enabled — notify admin users</option><option value="0">Disabled</option></select>
+        </div>
+      </div>
+    </div>
+    <div id="cmLV" style="display:none">
+      <div class="field"><label>.m3u8 stream URL</label>
+        <input id="cmM3u8" value="${c&&c.m3u8?esc(c.m3u8):''}" placeholder="http://STATIC-IP:PORT/stream/index.m3u8">
+        <div class="hint">HLS link from the static-IP encoder on site. Note: if you host this platform on HTTPS, the stream must also be served over HTTPS (browsers block mixed content).</div>
+      </div>
+    </div>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveCamera('${pid}','${lid}','${cid||''}')">Save camera</button>`,
+    (m)=>{
+      if(c){ m.querySelector('#cmType').value=c.type; if(c.type==='timelapse'){ m.querySelector('#cmMode').value=c.mode||'pattern'; m.querySelector('#cmAlerts').value=c.alertsEnabled===false?'0':'1'; } }
+      cmTypeChange(); cmModeChange();
+    });
+}
+function cmTypeChange(){
+  const t=document.getElementById('cmType').value;
+  document.getElementById('cmTL').style.display = t==='timelapse'?'':'none';
+  document.getElementById('cmLV').style.display = t==='live'?'':'none';
+}
+function cmModeChange(){
+  const el=document.getElementById('cmMode'); if(!el) return;
+  const m=el.value;
+  document.getElementById('cmPatternF').style.display = m==='pattern'?'':'none';
+  document.getElementById('cmLatestF').style.display  = m==='latest'?'':'none';
+}
+function saveCamera(pid,lid,cid){
+  const p=findProject(pid), l=findLocation(p,lid);
+  const name=document.getElementById('cmName').value.trim();
+  if(!name){ toast('Camera name is required', true); return; }
+  const type=document.getElementById('cmType').value;
+  if(!cid && l.cameras.some(x=>x.type===type)){
+    toast(`This location already has a ${type} camera — only one of each type is allowed.`, true); return;
+  }
+  let cam = cid ? l.cameras.find(x=>x.id===cid) : {id:uid(), type};
+  cam.name=name;
+  if(cam.type==='timelapse'){
+    cam.mode=document.getElementById('cmMode').value;
+    cam.pattern=document.getElementById('cmPattern').value.trim();
+    cam.latestUrl=document.getElementById('cmLatest').value.trim();
+    cam.intervalMin=Math.max(1, parseInt(document.getElementById('cmInt').value)||5);
+    cam.alertThresholdMin=Math.max(5, parseInt(document.getElementById('cmThresh').value)||60);
+    cam.alertsEnabled=document.getElementById('cmAlerts').value==='1';
+    if(cam.mode==='pattern' && !cam.pattern){ toast('URL pattern is required for pattern mode', true); return; }
+    if(cam.mode==='latest' && !cam.latestUrl){ toast('Latest image URL is required', true); return; }
+  } else {
+    cam.m3u8=document.getElementById('cmM3u8').value.trim();
+    if(!cam.m3u8){ toast('.m3u8 URL is required', true); return; }
+  }
+  if(!cid) l.cameras.push(cam);
+  save(); closeModal(); toast('Camera saved'); render();
+}
+function delCamera(pid,lid,cid){ confirmDeleteCamera(pid,lid,cid); } /* legacy alias, routes to strict confirm */
+
+/* ---------------- walls ---------------- */
+function projTLWall(p){
+  const cams = p.locations.flatMap(l=>l.cameras.filter(c=>c.type==='timelapse'&&canSeeCamera(c)).map(c=>({c,l})));
+  if(!cams.length) return `<div class="empty">No timelapse cameras in this project.</div>`;
+  return `<p class="hint" style="margin-bottom:12px">Latest image from every timelapse camera. Refreshes automatically every 60 seconds. View-only.</p>
+  <div class="wall">${cams.map(({c,l})=>`
+    <div class="tile"><img class="wall-tl" data-cam="${c.id}" src="${esc(tlLatest(c))}" alt="${esc(c.name)}">
+    <span class="tag">${esc(l.name)} · ${esc(c.name)}</span></div>`).join('')}</div>`;
+}
+function projLiveWall(p){
+  const cams = p.locations.flatMap(l=>l.cameras.filter(c=>c.type==='live'&&canSeeCamera(c)).map(c=>({c,l})));
+  if(!cams.length) return `<div class="empty">No live cameras in this project.</div>`;
+  return `<p class="hint" style="margin-bottom:12px">All live streams side by side. View-only.</p>
+  <div class="wall">${cams.map(({c,l})=>`
+    <div class="tile"><video class="wall-live" data-src="${esc(c.m3u8)}" muted playsinline controls></video>
+    <span class="tag">${esc(l.name)} · ${esc(c.name)}</span></div>`).join('')}</div>`;
+}
+/* =====================================================================
+   LOCATION VIEW
+   ===================================================================== */
+function viewLocation(p){
+  const l = findLocation(p, route.locationId);
+  if(!l){ go({view:'project'}); return ''; }
+  const cams = l.cameras.filter(canSeeCamera);
+  const tlCams = cams.filter(c=>c.type==='timelapse');
+  const lvCams = cams.filter(c=>c.type==='live');
+  const tabs = [
+    ['timelapse','Timelapse'], ['live','Live View'],
+    ['compare','Image Compare'], ['video','Video Generator']
+  ];
+  let body='';
+  if(route.ltab==='timelapse') body = tabTimelapse(p,l,tlCams);
+  else if(route.ltab==='live') body = tabLive(p,l,lvCams);
+  else if(route.ltab==='compare') body = tabCompare(p,l,tlCams);
+  else if(route.ltab==='video') body = tabVideo(p,l,tlCams);
+  return `<main class="page">
+    <div class="page-head">
+      <div><h1>${esc(l.name)}</h1><div class="sub">${esc(p.name)} · ${tlCams.length} timelapse · ${lvCams.length} live</div></div>
+      ${canEdit()?`<div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${missingCamTypes(l).length?`<button class="btn sm" onclick="modalCamera('${p.id}','${l.id}')">＋ Add camera</button>`:''}
+        ${cams.map(c=>`<button class="btn sm" onclick="modalCamera('${p.id}','${l.id}','${c.id}')">⚙ ${esc(c.name.split('—')[0].trim())}</button>`).join('')}
+      </div>`:''}
+    </div>
+    <div class="tabs">${tabs.map(t=>`<button class="tab ${route.ltab===t[0]?'active':''}" onclick="go({ltab:'${t[0]}'})">${t[1]}</button>`).join('')}</div>
+    ${body}
+  </main>`;
+}
+function camSelect(id, cams, selId){
+  if(cams.length<=1) return '';
+  return `<select id="${id}" style="width:auto;min-width:180px" onchange="go({cameraId:this.value})">
+    ${cams.map(c=>`<option value="${c.id}" ${c.id===selId?'selected':''}>${esc(c.name)}</option>`).join('')}</select>`;
+}
+function pickCam(cams){
+  if(!cams.length) return null;
+  return cams.find(c=>c.id===route.cameraId) || cams[0];
+}
+
+/* ---------------- timelapse tab ---------------- */
+let tlState = { when:null };  // null = live latest
+let tlShown = null;           // Date of the frame currently displayed (for download naming)
+function tabTimelapse(p,l,cams){
+  const cam = pickCam(cams);
+  if(!cam) return `<div class="empty">No timelapse camera at this location.${canEdit()?' Use “＋ Add camera” above.':''}</div>`;
+  const liveMode = !tlState.when;
+  const when = tlState.when || floorSlot(new Date(), cam.intervalMin||5);
+  return `
+  <div class="stage-wrap">
+    <div class="stage-tools">
+      ${camSelect('tlCamSel', cams, cam.id)}
+      <input type="date" id="tlDate" value="${dateVal(when)}" style="width:auto">
+      <input type="time" id="tlTime" step="${(cam.intervalMin||5)*60}" value="${timeVal(when)}" style="width:auto">
+      <button class="btn sm" onclick="tlView('${cam.id}')">View image</button>
+      <button class="btn sm ${liveMode?'primary':''}" onclick="tlLive('${cam.id}')">⟳ Latest</button>
+      <div class="grow"></div>
+      <button class="btn sm icon" onclick="stageZoom(1.3)" title="Zoom in">＋</button>
+      <button class="btn sm icon" onclick="stageZoom(1/1.3)" title="Zoom out">－</button>
+      <button class="btn sm icon" onclick="stageZoomReset()" title="Reset zoom">⤢ 1:1</button>
+      <button class="btn sm icon" id="tlDownload" onclick="tlDownloadNow('${cam.id}')" title="Download this image">⤓</button>
+    </div>
+    <div class="stage grabbable" id="tlStage">
+      <img class="main" id="tlImg" src="${esc(tlUrl(cam,when))}" alt="Timelapse frame"
+           onerror="this.style.display='none';document.getElementById('tlMsg').style.display='flex'"
+           onload="this.style.display='';document.getElementById('tlMsg').style.display='none'">
+      <div class="stage-msg" id="tlMsg" style="display:none">No image found for this date/time.<br>Check the camera URL pattern or pick another time.</div>
+      <div class="osd" id="tlOsd">
+        <b>${esc(cam.name)}</b><br>
+        ${fmtDT(when)} &nbsp;${liveMode?'<span class="rec">● LATEST</span>':'ARCHIVE'}<br>
+        <span id="tlZoomLbl">Zoom 100%</span> · every ${cam.intervalMin||5} min · <span id="tlHealth" data-cam="${cam.id}">checking…</span>
+      </div>
+    </div>
+  </div>
+  <p class="hint" style="margin-top:8px">${liveMode
+    ? 'Live mode: the viewer checks for a new frame every 60 seconds and shows the newest capture automatically. Scroll/pinch or use ＋/－ to zoom, drag to pan.'
+    : 'Archive mode: showing the frame nearest to the selected date & time. Click “⟳ Latest” to return to auto-updating.'}</p>`;
+}
+function tlView(camId){
+  const d = parseDT(document.getElementById('tlDate').value, document.getElementById('tlTime').value);
+  if(!d){ toast('Pick a valid date and time', true); return; }
+  tlState.when = d; go({cameraId:camId});
+}
+function tlLive(camId){ tlState.when = null; go({cameraId:camId}); }
+function snapName(cam, d, ext){
+  const n = cam.name.replace(/[^\w\u0600-\u06FF-]+/g,'_');
+  return `${n}_${pad(d.getDate())}${pad(d.getMonth()+1)}${String(d.getFullYear()).slice(2)}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}.${ext}`;
+}
+async function tlDownloadNow(camId){
+  const p=findProject(route.projectId), l=findLocation(p,route.locationId);
+  const cam=l.cameras.find(c=>c.id===camId); if(!cam) return;
+  const img=document.getElementById('tlImg'); if(!img||!img.src) return;
+  const d = tlShown || new Date();
+  const fname = snapName(cam, d, 'jpg');
+  try{
+    const r = await fetch(img.src, {mode:'cors'});
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=fname; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    toast('Image downloaded');
+  }catch(e){
+    window.open(img.src, '_blank'); // CORS blocked direct download — open in new tab instead
+    toast('Direct download blocked by the image server — opened in a new tab (right-click → Save image).', true);
+  }
+}
+/* After render, snap the displayed frame to the NEAREST actually-existing image
+   and stamp the real date/time on the OSD. */
+async function tlResolveNearest(cam, want, liveMode){
+  const img=document.getElementById('tlImg'), osd=document.getElementById('tlOsd'), msg=document.getElementById('tlMsg');
+  if(!img) return;
+  const found = await nearestFrame(cam, want);
+  if(!document.getElementById('tlImg')) return; // view changed meanwhile
+  if(found){
+    tlShown = found;
+    const exact = Math.abs(found - floorSlot(want, cam.intervalMin||5)) < 1000;
+    img.src = tlUrl(cam, found);
+    img.style.display=''; if(msg) msg.style.display='none';
+    if(osd) osd.innerHTML = `<b>${esc(cam.name)}</b><br>${fmtDT(found)} &nbsp;${liveMode?'<span class="rec">● LATEST</span>':(exact?'ARCHIVE':'<span style="color:#ffd166">NEAREST MATCH</span>')}<br><span id="tlZoomLbl">Zoom ${Math.round(zoom.s*100)}%</span> · every ${cam.intervalMin||5} min · <span id="tlHealth" data-cam="${cam.id}">checking…</span>`;
+    updateHealthUI();
+  } else {
+    img.style.display='none';
+    if(msg){ msg.style.display='flex'; msg.innerHTML='No image found near this date/time.<br>Try another time or check the camera URL pattern.'; }
+  }
+}
+
+/* zoom / pan for the main stage */
+let zoom = {s:1,x:0,y:0};
+function stageApply(){
+  const img=document.getElementById('tlImg'); if(!img) return;
+  img.style.transform=`translate(${zoom.x}px,${zoom.y}px) scale(${zoom.s})`;
+  const lbl=document.getElementById('tlZoomLbl'); if(lbl) lbl.textContent=`Zoom ${Math.round(zoom.s*100)}%`;
+}
+function stageZoom(f){ zoom.s=Math.min(8,Math.max(1,zoom.s*f)); if(zoom.s===1){zoom.x=0;zoom.y=0;} stageApply(); }
+function stageZoomReset(){ zoom={s:1,x:0,y:0}; stageApply(); }
+
+/* ---------------- live tab ---------------- */
+function tabLive(p,l,cams){
+  const cam = pickCam(cams);
+  if(!cam) return `<div class="empty">No live streaming camera at this location.${canEdit()?' Use “＋ Add camera” above.':''}</div>`;
+  return `
+  <div class="stage-wrap">
+    <div class="stage-tools">
+      ${camSelect('lvCamSel', cams, cam.id)}
+      <span class="chip live">Live</span>
+      <div class="grow"></div>
+      <button class="btn sm icon" onclick="lvZoomBtn(1.3)" title="Zoom in">＋</button>
+      <button class="btn sm icon" onclick="lvZoomBtn(1/1.3)" title="Zoom out">－</button>
+      <button class="btn sm icon" onclick="lvZoomReset()" title="Reset zoom">⤢ 1:1</button>
+      <button class="btn sm primary" onclick="takeSnapshot('${cam.id}')">📸 Snapshot</button>
+      <button class="btn sm" onclick="lvFullscreen()">⛶ Fullscreen</button>
+    </div>
+    <div class="stage grabbable" id="lvStage">
+      <video id="lvPlayer" class="player main" data-src="${esc(cam.m3u8)}" controls muted playsinline disablePictureInPicture controlsList="nofullscreen noremoteplayback"></video>
+      <div class="zoom-side">
+        <button onclick="lvZoomBtn(1.3)" title="Zoom in">+</button>
+        <button onclick="lvZoomBtn(1/1.3)" title="Zoom out">−</button>
+      </div>
+      <div class="osd"><b>${esc(cam.name)}</b><br><span class="rec">● LIVE</span> HLS stream<br><span id="lvZoomLbl">Zoom 100%</span></div>
+    </div>
+  </div>
+  <p class="hint" style="margin-top:8px">Playing ${esc(cam.m3u8)}. Use the +/− buttons (or mouse wheel / pinch) to zoom, drag to pan once zoomed in, and 📸 Snapshot to save the current frame.</p>
+  ${snapshotsPanel(p,l,cam)}`;
+}
+function snapshotsPanel(p,l,cam){
+  const snaps = (cam.snapshots||[]).slice().reverse();
+  return `<div class="panel" style="margin-top:14px">
+    <h3>Snapshots — ${esc(cam.name)}</h3>
+    ${snaps.length? `<div class="snaps">${snaps.map(sn=>{
+      const d=new Date(sn.time);
+      const label=`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${String(d.getFullYear()).slice(2)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      return `<div class="sn">
+        <img src="${sn.data}" alt="" onclick="lightbox('${sn.data}')">
+        <div class="m"><span class="t">${label}</span>
+          <span style="display:flex;gap:4px">
+            <a class="btn sm icon" download="${snapName(cam,d,'jpg')}" href="${sn.data}" title="Download">⤓</a>
+            ${canEdit()?`<button class="btn sm icon danger" onclick="delSnapshot('${p.id}','${l.id}','${cam.id}','${sn.id}')" title="Delete">✕</button>`:''}
+          </span>
+        </div></div>`;
+    }).join('')}</div>`
+    : `<div class="empty" style="padding:20px">No snapshots yet — press 📸 Snapshot while the stream is playing. The last ${'10'} snapshots per camera are kept.</div>`}
+  </div>`;
+}
+async function takeSnapshot(camId){
+  const p=findProject(route.projectId), l=findLocation(p,route.locationId);
+  const cam=l.cameras.find(c=>c.id===camId); if(!cam) return;
+  const v=document.getElementById('lvPlayer');
+  if(!v || v.readyState<2){ toast('Stream is not playing yet — wait for the video to start.', true); return; }
+  try{
+    const scale=Math.min(1, 1280/(v.videoWidth||1280));
+    const cv=document.createElement('canvas');
+    cv.width=Math.round((v.videoWidth||1280)*scale); cv.height=Math.round((v.videoHeight||720)*scale);
+    cv.getContext('2d').drawImage(v,0,0,cv.width,cv.height);
+    const data=cv.toDataURL('image/jpeg',0.78);
+    if(!cam.snapshots) cam.snapshots=[];
+    cam.snapshots.push({id:uid(), time:new Date().toISOString(), data});
+    while(cam.snapshots.length>10) cam.snapshots.shift(); // keep last 10 to protect browser storage
+    save(); toast('Snapshot saved'); render();
+  }catch(e){
+    toast('Snapshot blocked: the stream server must allow CORS for frame capture. This works once the stream is served with proper CORS headers.', true);
+  }
+}
+function delSnapshot(pid,lid,cid,sid){
+  const cam=findLocation(findProject(pid),lid).cameras.find(c=>c.id===cid);
+  cam.snapshots=(cam.snapshots||[]).filter(x=>x.id!==sid);
+  save(); render();
+}
+function lvFullscreen(){
+  const el=document.getElementById('lvStage');
+  if(el && el.requestFullscreen) el.requestFullscreen();
+}
+/* live-view zoom/pan state, mirrors the timelapse viewer's zoom behaviour */
+let lvZoomState = {s:1,x:0,y:0};
+function lvStageApply(){
+  const v=document.getElementById('lvPlayer'); if(!v) return;
+  v.style.transform=`translate(${lvZoomState.x}px,${lvZoomState.y}px) scale(${lvZoomState.s})`;
+  const lbl=document.getElementById('lvZoomLbl'); if(lbl) lbl.textContent=`Zoom ${Math.round(lvZoomState.s*100)}%`;
+}
+function lvZoomBtn(f){ lvZoomState.s=Math.min(8,Math.max(1,lvZoomState.s*f)); if(lvZoomState.s===1){lvZoomState.x=0;lvZoomState.y=0;} lvStageApply(); }
+function lvZoomReset(){ lvZoomState={s:1,x:0,y:0}; lvStageApply(); }
+
+/* ---------------- compare tab ---------------- */
+let cmp = { a:null, b:null, pos:50 };
+function tabCompare(p,l,cams){
+  const cam = pickCam(cams);
+  if(!cam) return `<div class="empty">Image compare needs at least one timelapse camera at this location.</div>`;
+  const now = floorSlot(new Date(), cam.intervalMin||5);
+  const monthAgo = new Date(now); monthAgo.setDate(monthAgo.getDate()-23);
+  const a = cmp.a || monthAgo, b = cmp.b || now;
+  return `
+  <div class="stage-wrap">
+    <div class="stage-tools">
+      ${camSelect('cpCamSel', cams, cam.id)}
+      <label style="margin:0;align-self:center">Image 1</label>
+      <input type="date" id="cpDateA" value="${dateVal(a)}" style="width:auto">
+      <input type="time" id="cpTimeA" step="${(cam.intervalMin||5)*60}" value="${timeVal(a)}" style="width:auto">
+      <button class="btn sm" onclick="cmpLatest('a','${cam.id}')" title="Use the latest captured image for Image 1">⟳ Latest</button>
+      <label style="margin:0;align-self:center">Image 2</label>
+      <input type="date" id="cpDateB" value="${dateVal(b)}" style="width:auto">
+      <input type="time" id="cpTimeB" step="${(cam.intervalMin||5)*60}" value="${timeVal(b)}" style="width:auto">
+      <button class="btn sm" onclick="cmpLatest('b','${cam.id}')" title="Use the latest captured image for Image 2">⟳ Latest</button>
+      <button class="btn sm primary" onclick="cmpLoad('${cam.id}')">Compare</button>
+    </div>
+    <div class="cmp-stage" id="cmpStage">
+      <img class="imgB" id="cmpB" src="${esc(tlUrl(cam,b))}" alt="Image 2">
+      <img class="imgA" id="cmpA" src="${esc(tlUrl(cam,a))}" alt="Image 1">
+      <div class="cmp-handle" id="cmpHandle"><div class="knob">⇄</div></div>
+      <canvas id="cmpDraw" style="position:absolute;inset:0;z-index:8;pointer-events:none;touch-action:none"></canvas>
+      <span class="cmp-tag a" id="cmpTagA">IMG 1 · ${fmtDT(a)}</span>
+      <span class="cmp-tag b" id="cmpTagB">IMG 2 · ${fmtDT(b)}</span>
+    </div>
+    <div class="stage-tools" style="border-bottom:none;border-top:1px solid var(--line)">
+      <button class="btn sm primary" id="anBtnSlide" onclick="anMode('slide')">⇄ Slide</button>
+      <button class="btn sm" id="anBtnDraw" onclick="anMode('draw')">✏ Annotate</button>
+      <select id="anTool" style="width:auto">
+        <option value="pen">Pen</option><option value="arrow">Arrow</option>
+        <option value="rect">Box</option><option value="text">Text</option>
+      </select>
+      <input type="color" id="anColor" value="#3d9be9" title="Annotation color" style="width:46px;height:35px;padding:2px">
+      <button class="btn sm" onclick="anUndo()">↶ Undo</button>
+      <button class="btn sm" onclick="anClear()">Clear</button>
+      <div class="grow"></div>
+      <button class="btn sm" onclick="anSnapshot()">⤓ Save annotated snapshot</button>
+    </div>
+  </div>
+  <p class="hint" style="margin-top:8px">Drag the gold bar left/right — the left side shows Image 1, the right side Image 2, exactly like your reference screenshot. Switch to <b>Annotate</b> to draw, box, arrow, or write notes on top of the comparison, then save the whole view (images + slider + markup) as a PNG snapshot for reports.</p>`;
+}
+function cmpLoad(camId){
+  const a = parseDT(document.getElementById('cpDateA').value, document.getElementById('cpTimeA').value);
+  const b = parseDT(document.getElementById('cpDateB').value, document.getElementById('cpTimeB').value);
+  if(!a||!b){ toast('Pick valid dates and times for both images', true); return; }
+  cmp.a=a; cmp.b=b; go({cameraId:camId});
+}
+function cmpLatest(side, camId){
+  const now=new Date();
+  if(side==='a') cmp.a=now; else cmp.b=now;
+  // keep the other side as currently selected in the inputs
+  const oA=parseDT(document.getElementById('cpDateA').value, document.getElementById('cpTimeA').value);
+  const oB=parseDT(document.getElementById('cpDateB').value, document.getElementById('cpTimeB').value);
+  if(side==='a' && oB) cmp.b=oB;
+  if(side==='b' && oA) cmp.a=oA;
+  go({cameraId:camId});
+}
+/* Resolve both compare images to the nearest actually-existing frames (same logic as View image). */
+async function cmpResolveNearest(cam, a, b){
+  const [ra, rb] = await Promise.all([nearestFrame(cam,a), nearestFrame(cam,b)]);
+  const A=document.getElementById('cmpA'), B=document.getElementById('cmpB');
+  const tA=document.getElementById('cmpTagA'), tB=document.getElementById('cmpTagB');
+  if(!A||!B) return; // view changed
+  const stamp=(want,found)=> found
+    ? `${fmtDT(found)}${Math.abs(found-floorSlot(want,cam.intervalMin||5))<1000?'':' (nearest)'}`
+    : 'no image found';
+  if(ra) A.src=tlUrl(cam,ra);
+  if(rb) B.src=tlUrl(cam,rb);
+  if(tA) tA.textContent=`IMG 1 · ${stamp(a,ra)}`;
+  if(tB) tB.textContent=`IMG 2 · ${stamp(b,rb)}`;
+}
+function initCompare(){
+  const stage=document.getElementById('cmpStage'); if(!stage) return;
+  const A=document.getElementById('cmpA'), H=document.getElementById('cmpHandle');
+  function setPos(pct){
+    cmp.pos=Math.min(100,Math.max(0,pct));
+    A.style.clipPath=`inset(0 ${100-cmp.pos}% 0 0)`;
+    H.style.left=cmp.pos+'%';
+  }
+  setPos(cmp.pos||50);
+  let drag=false;
+  const move=e=>{
+    if(!drag) return;
+    const r=stage.getBoundingClientRect();
+    const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    setPos(x/r.width*100);
+  };
+  const down=e=>{ if(anState.mode==='draw') return; drag=true; move(e); };
+  const up=()=>drag=false;
+  stage.addEventListener('mousedown',down); stage.addEventListener('touchstart',down,{passive:true});
+  window.addEventListener('mousemove',move); window.addEventListener('touchmove',move,{passive:true});
+  window.addEventListener('mouseup',up); window.addEventListener('touchend',up);
+}
+
+/* ---------------- video generator tab ---------------- */
+function tabVideo(p,l,cams){
+  const cam = pickCam(cams);
+  if(!cam) return `<div class="empty">The video generator needs at least one timelapse camera at this location.</div>`;
+  const now = floorSlot(new Date(), cam.intervalMin||5);
+  const start = new Date(now); start.setDate(start.getDate()-1);
+  return `
+  <div class="panel" style="max-width:760px">
+    <h3>Generate timelapse video</h3>
+    <div class="row">
+      <div class="field"><label>Start date</label><input type="date" id="vgDateS" value="${dateVal(start)}"></div>
+      <div class="field"><label>Start time</label><input type="time" id="vgTimeS" step="${(cam.intervalMin||5)*60}" value="${timeVal(start)}"></div>
+      <div class="field"><label>End date</label><input type="date" id="vgDateE" value="${dateVal(now)}"></div>
+      <div class="field"><label>End time</label><input type="time" id="vgTimeE" step="${(cam.intervalMin||5)*60}" value="${timeVal(now)}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Video duration (seconds)</label><input type="number" id="vgDur" min="2" max="120" value="15"></div>
+      <div class="field"><label>Frames per second</label><input type="number" id="vgFps" min="1" max="60" value="24"><div class="hint">Default 24 fps — editable.</div></div>
+      ${cams.length>1?`<div class="field"><label>Camera</label>${camSelect('vgCamSel',cams,cam.id).replace('onchange="go({cameraId:this.value})"','')}</div>`:''}
+    </div>
+    <div class="hint" style="margin-bottom:14px" id="vgEst"></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn primary" id="vgGo" onclick="genVideo('${cam.id}','${p.id}','${l.id}')">▶ Generate video</button>
+      <div class="progress" style="flex:1;min-width:160px"><i id="vgBar"></i></div>
+      <span id="vgStatus" style="font-size:13px;color:var(--muted)"></span>
+    </div>
+    <div id="vgOut" style="margin-top:16px"></div>
+  </div>
+  <p class="hint" style="margin-top:10px">Frames between start and end are sampled evenly so the clip matches your chosen duration × fps. The video is rendered in the browser as .webm. Note: the image server (Oracle Cloud bucket) must allow CORS for this page's domain, otherwise the browser blocks video encoding. For long ranges or .mp4 output, a small server-side job (e.g. ffmpeg) is the production approach — I can add that when we move off the prototype.</p>`;
+}
+function vgEstimate(){
+  const el=document.getElementById('vgEst'); if(!el) return;
+  const dur=+document.getElementById('vgDur').value||15, fps=+document.getElementById('vgFps').value||24;
+  el.textContent=`≈ ${dur*fps} frames will be fetched and encoded (${dur}s × ${fps}fps).`;
+}
+async function genVideo(camId,pid,lid){
+  const p=findProject(pid), l=findLocation(p,lid);
+  const sel=document.getElementById('vgCamSel');
+  const cam=l.cameras.find(c=>c.id===(sel?sel.value:camId));
+  const s=parseDT(document.getElementById('vgDateS').value,document.getElementById('vgTimeS').value);
+  const e=parseDT(document.getElementById('vgDateE').value,document.getElementById('vgTimeE').value);
+  const dur=Math.max(1,+document.getElementById('vgDur').value||15);
+  const fps=Math.min(60,Math.max(1,+document.getElementById('vgFps').value||24));
+  if(!s||!e||e<=s){ toast('End must be after start', true); return; }
+  const bar=document.getElementById('vgBar'), st=document.getElementById('vgStatus'), out=document.getElementById('vgOut'), goBtn=document.getElementById('vgGo');
+  const interval=(cam.intervalMin||5)*60000;
+  const slots=[]; for(let t=floorSlot(s,cam.intervalMin||5).getTime(); t<=e.getTime(); t+=interval) slots.push(new Date(t));
+  if(!slots.length){ toast('No frames in that range', true); return; }
+  let want=Math.min(dur*fps, 900);
+  const frames=[]; for(let i=0;i<want;i++) frames.push(slots[Math.min(slots.length-1, Math.round(i*(slots.length-1)/Math.max(1,want-1)))]);
+  goBtn.disabled=true; out.innerHTML=''; st.textContent='Loading frames…';
+
+  // load images
+  const imgs=[]; let failed=0;
+  for(let i=0;i<frames.length;i++){
+    const url=tlUrl(cam,frames[i]);
+    const im=new Image(); im.crossOrigin='anonymous';
+    const ok=await new Promise(res=>{ im.onload=()=>res(true); im.onerror=()=>res(false); im.src=url; });
+    if(ok) imgs.push({im, t:frames[i]}); else failed++;
+    bar.style.width=Math.round((i+1)/frames.length*60)+'%';
+    st.textContent=`Loading frames ${i+1}/${frames.length}${failed?` (${failed} missing)`:''}`;
+  }
+  if(imgs.length<2){ st.textContent='Not enough frames found — check the camera URL pattern and range.'; goBtn.disabled=false; return; }
+
+  // encode
+  st.textContent='Encoding video…';
+  const W=1280,H=720;
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const cx=cv.getContext('2d');
+  const stream=cv.captureStream(fps);
+  const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m))||'video/webm';
+  const rec=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8_000_000});
+  const chunks=[]; rec.ondataavailable=ev=>{ if(ev.data.size) chunks.push(ev.data); };
+  const done=new Promise(res=>rec.onstop=res);
+  rec.start();
+  let i=0;
+  await new Promise(res=>{
+    const tick=setInterval(()=>{
+      if(i>=imgs.length){ clearInterval(tick); res(); return; }
+      const {im,t}=imgs[i];
+      cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
+      const r=Math.min(W/im.naturalWidth,H/im.naturalHeight);
+      const w=im.naturalWidth*r,h=im.naturalHeight*r;
+      cx.drawImage(im,(W-w)/2,(H-h)/2,w,h);
+      cx.font='20px "IBM Plex Mono",monospace';
+      const label=`${cam.name}  ${fmtDT(t)}`;
+      cx.fillStyle='rgba(0,0,0,.6)'; cx.fillRect(W-cx.measureText(label).width-34,14,cx.measureText(label).width+22,34);
+      cx.fillStyle='#a9d3ff'; cx.fillText(label,W-cx.measureText(label).width-24,37);
+      bar.style.width=(60+Math.round((i+1)/imgs.length*40))+'%';
+      i++;
+    }, 1000/fps);
+  });
+  await new Promise(r=>setTimeout(r,300));
+  rec.stop(); await done;
+  const blob=new Blob(chunks,{type:'video/webm'});
+  const url=URL.createObjectURL(blob);
+  const fname=`${l.name.replace(/\W+/g,'_')}_${dateVal(imgs[0].t)}_to_${dateVal(imgs[imgs.length-1].t)}.webm`;
+  st.textContent=`Done — ${imgs.length} frames, ${(blob.size/1048576).toFixed(1)} MB.`;
+  bar.style.width='100%'; goBtn.disabled=false;
+  out.innerHTML=`<video src="${url}" controls style="width:100%;border-radius:8px;border:1px solid var(--line)"></video>
+    <div style="margin-top:10px"><a class="btn primary" href="${url}" download="${fname}">⤓ Download ${fname}</a></div>`;
+}
+
+/* =====================================================================
+   COMPARE ANNOTATIONS
+   ===================================================================== */
+const anState = { mode:'slide', shapes:[], cur:null };
+function anMode(m){
+  anState.mode=m;
+  const cv=document.getElementById('cmpDraw'), st=document.getElementById('cmpStage');
+  const bS=document.getElementById('anBtnSlide'), bD=document.getElementById('anBtnDraw');
+  if(!cv) return;
+  cv.style.pointerEvents = m==='draw' ? 'auto' : 'none';
+  if(st) st.style.cursor = m==='draw' ? 'crosshair' : '';
+  bS.classList.toggle('primary', m==='slide');
+  bD.classList.toggle('primary', m==='draw');
+}
+function anRedraw(){
+  const cv=document.getElementById('cmpDraw'); if(!cv) return;
+  const cx=cv.getContext ? cv.getContext('2d') : null; if(!cx) return;
+  cx.clearRect(0,0,cv.width,cv.height);
+  const all=[...anState.shapes]; if(anState.cur) all.push(anState.cur);
+  for(const s of all){
+    cx.strokeStyle=s.color; cx.fillStyle=s.color; cx.lineWidth=3; cx.lineJoin='round'; cx.lineCap='round';
+    if(s.tool==='pen'){
+      cx.beginPath(); s.pts.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1])); cx.stroke();
+    } else if(s.tool==='rect'){
+      cx.strokeRect(Math.min(s.x1,s.x2),Math.min(s.y1,s.y2),Math.abs(s.x2-s.x1),Math.abs(s.y2-s.y1));
+    } else if(s.tool==='arrow'){
+      cx.beginPath(); cx.moveTo(s.x1,s.y1); cx.lineTo(s.x2,s.y2); cx.stroke();
+      const a=Math.atan2(s.y2-s.y1,s.x2-s.x1), L=13;
+      cx.beginPath(); cx.moveTo(s.x2,s.y2);
+      cx.lineTo(s.x2-L*Math.cos(a-0.42), s.y2-L*Math.sin(a-0.42));
+      cx.lineTo(s.x2-L*Math.cos(a+0.42), s.y2-L*Math.sin(a+0.42));
+      cx.closePath(); cx.fill();
+    } else if(s.tool==='text'){
+      cx.font='600 17px Inter,sans-serif';
+      cx.strokeStyle='rgba(0,0,0,.75)'; cx.lineWidth=4; cx.strokeText(s.str,s.x,s.y);
+      cx.fillText(s.str,s.x,s.y);
+    }
+  }
+}
+function anUndo(){ anState.shapes.pop(); anRedraw(); }
+function anClear(){ anState.shapes=[]; anState.cur=null; anRedraw(); }
+function initAnnotate(){
+  const cv=document.getElementById('cmpDraw'), stage=document.getElementById('cmpStage');
+  if(!cv||!stage) return;
+  const size=()=>{ const r=stage.getBoundingClientRect(); cv.width=r.width; cv.height=r.height; anRedraw(); };
+  size(); window.addEventListener('resize', size);
+  anState.mode='slide'; anMode('slide');
+  const pos=e=>{ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return [t.clientX-r.left, t.clientY-r.top]; };
+  const tool=()=>document.getElementById('anTool').value;
+  const color=()=>document.getElementById('anColor').value;
+  cv.addEventListener('pointerdown', e=>{
+    e.stopPropagation(); const [x,y]=pos(e);
+    if(tool()==='text'){
+      const str=prompt('Annotation text:'); if(str) { anState.shapes.push({tool:'text',color:color(),x,y,str}); anRedraw(); }
+      return;
+    }
+    if(tool()==='pen') anState.cur={tool:'pen',color:color(),pts:[[x,y]]};
+    else anState.cur={tool:tool(),color:color(),x1:x,y1:y,x2:x,y2:y};
+    cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove', e=>{
+    if(!anState.cur) return; const [x,y]=pos(e);
+    if(anState.cur.tool==='pen') anState.cur.pts.push([x,y]);
+    else { anState.cur.x2=x; anState.cur.y2=y; }
+    anRedraw();
+  });
+  cv.addEventListener('pointerup', ()=>{ if(anState.cur){ anState.shapes.push(anState.cur); anState.cur=null; anRedraw(); } });
+}
+function drawContain(cx,im,W,H){
+  const r=Math.min(W/im.naturalWidth,H/im.naturalHeight);
+  const w=im.naturalWidth*r, h=im.naturalHeight*r;
+  cx.drawImage(im,(W-w)/2,(H-h)/2,w,h);
+}
+function anSnapshot(){
+  const A=document.getElementById('cmpA'), B=document.getElementById('cmpB'), cv=document.getElementById('cmpDraw');
+  const stage=document.getElementById('cmpStage'); if(!A||!B||!stage) return;
+  try{
+    const W=cv.width, H=cv.height;
+    const out=document.createElement('canvas'); out.width=W; out.height=H;
+    const cx=out.getContext('2d');
+    cx.fillStyle='#040a12'; cx.fillRect(0,0,W,H);
+    drawContain(cx,B,W,H);
+    const split=W*(cmp.pos||50)/100;
+    cx.save(); cx.beginPath(); cx.rect(0,0,split,H); cx.clip(); drawContain(cx,A,W,H); cx.restore();
+    cx.strokeStyle='#3d9be9'; cx.lineWidth=2; cx.beginPath(); cx.moveTo(split,0); cx.lineTo(split,H); cx.stroke();
+    cx.drawImage(cv,0,0);
+    const tagA=document.querySelector('.cmp-tag.a'), tagB=document.querySelector('.cmp-tag.b');
+    cx.font='13px "IBM Plex Mono",monospace';
+    const tag=(txt,x,right)=>{ const w=cx.measureText(txt).width+16; const rx=right?W-10-w:x; cx.fillStyle='rgba(5,8,11,.8)'; cx.fillRect(rx,10,w,24); cx.fillStyle='#a9d3ff'; cx.fillText(txt,rx+8,27); };
+    if(tagA) tag(tagA.textContent,10,false);
+    if(tagB) tag(tagB.textContent,0,true);
+    const url=out.toDataURL('image/png');
+    const a=document.createElement('a'); a.href=url; a.download='FalconViz_compare_snapshot.png'; a.click();
+    toast('Snapshot saved');
+  }catch(e){
+    toast('Snapshot blocked: image server must allow CORS (use a PAR/bucket with CORS rules)', true);
+  }
+}
+
+/* =====================================================================
+   CAMERA HEALTH & ALERTS
+   ===================================================================== */
+const camHealth = {};
+let lastHealthRun = 0;
+function bellHTML(){
+  const open = db.alerts ? db.alerts.filter(a=>!a.resolved).length : 0;
+  return open ? `🔔 <b style="color:#ff8d78">${open}</b>` : '🔔';
+}
+function refreshBell(){ const b=document.getElementById('alertBell'); if(b) b.innerHTML=bellHTML(); }
+function allTLCams(){
+  return db.projects.flatMap(p=>p.locations.flatMap(l=>l.cameras.filter(c=>c.type==='timelapse').map(c=>({c,p,l}))));
+}
+function probeImg(url){
+  return new Promise(res=>{
+    const im=new Image();
+    const t=setTimeout(()=>res(false), 10000);
+    im.onload=()=>{clearTimeout(t);res(true)};
+    im.onerror=()=>{clearTimeout(t);res(false)};
+    im.src=url+(url.includes('?')?'&':'?')+'_hc='+Date.now();
+  });
+}
+async function checkCamera(c,p,l){
+  const interval=c.intervalMin||5;
+  const thresh=c.alertThresholdMin||60;
+  if(c.mode==='demo'||(!c.pattern&&!c.latestUrl)){
+    camHealth[c.id]={status:'online', lastSeen:floorSlot(new Date(),interval), demo:true};
+    autoResolve(c.id); updateHealthUI(); return;
+  }
+  const tries=Math.max(1, Math.ceil(thresh/interval));
+  let lastSeen=null;
+  for(let i=0;i<Math.min(tries,24);i++){
+    const d=new Date(Date.now()-i*interval*60000);
+    if(await probeImg(tlUrl(c,d))){ lastSeen=floorSlot(d,interval); break; }
+  }
+  camHealth[c.id]={status:lastSeen?'online':'offline', lastSeen};
+  if(!lastSeen && c.alertsEnabled!==false) raiseAlert(c,p,l,thresh);
+  else if(lastSeen) autoResolve(c.id);
+  updateHealthUI();
+}
+function raiseAlert(c,p,l,thresh,message){
+  if(db.alerts.some(a=>a.camId===c.id && !a.resolved)) return;
+  db.alerts.unshift({
+    id:uid(), camId:c.id, cam:c.name, project:p.name, location:l.name,
+    message: message || `Camera not syncing — no image received within the last ${thresh} minutes`,
+    time:new Date().toISOString(), resolved:false
+  });
+  save(); refreshBell();
+  toast(`⚠ ALERT · ${c.name} (${l.name}) is not syncing images`, true);
+}
+function autoResolve(camId){
+  let changed=false;
+  db.alerts.forEach(a=>{ if(a.camId===camId && !a.resolved){ a.resolved=true; a.resolvedTime=new Date().toISOString(); a.auto=true; changed=true; } });
+  if(changed){ save(); refreshBell(); }
+}
+function resolveAlert(id){
+  const a=db.alerts.find(x=>x.id===id);
+  if(a){ a.resolved=true; a.resolvedTime=new Date().toISOString(); save(); refreshBell(); modalAlerts(); }
+}
+function updateHealthUI(){
+  const el=document.getElementById('tlHealth');
+  if(el){
+    const h=camHealth[el.dataset.cam];
+    if(!h) el.textContent='checking…';
+    else if(h.status==='online') el.innerHTML=`<span style="color:#4fc98a">● ONLINE</span>${h.demo?' (demo)':''}`;
+    else el.innerHTML=`<span style="color:#ff8d78">● OFFLINE</span>`;
+  }
+}
+async function runHealthChecks(force){
+  if(!session) return;
+  if(!force && Date.now()-lastHealthRun < 60000) { updateHealthUI(); return; }
+  lastHealthRun=Date.now();
+  for(const {c,p,l} of allTLCams()) await checkCamera(c,p,l);
+}
+function modalAlerts(){
+  const open=db.alerts.filter(a=>!a.resolved), closed=db.alerts.filter(a=>a.resolved).slice(0,15);
+  const row=a=>`<tr>
+    <td style="white-space:nowrap;font-family:var(--osd-font);font-size:12px">${fmtDT(new Date(a.time))}</td>
+    <td><b>${esc(a.cam)}</b><br><span style="color:var(--muted);font-size:12.5px">${esc(a.project)} · ${esc(a.location)}</span><br><span style="font-size:13px">${esc(a.message)}</span></td>
+    <td style="text-align:right">${a.resolved
+      ? `<span class="chip" style="color:var(--ok);border-color:rgba(79,201,138,.5)">resolved${a.auto?' (auto)':''}</span>`
+      : `<button class="btn sm" onclick="resolveAlert('${a.id}')">Mark resolved</button>`}</td></tr>`;
+  openModal('Camera alerts', `
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn sm" onclick="runHealthChecks(true).then(()=>modalAlerts())">⟳ Run check now</button>
+      <button class="btn sm" onclick="demoAlert()">Simulate an alert (demo)</button>
+    </div>
+    ${open.length? `<div class="table-wrap" style="margin-bottom:14px"><table><tbody>${open.map(row).join('')}</tbody></table></div>`
+      : `<div class="empty" style="padding:18px;margin-bottom:14px">No active alerts — all monitored cameras are syncing.</div>`}
+    ${closed.length? `<label>Recent resolved</label><div class="table-wrap"><table><tbody>${closed.map(row).join('')}</tbody></table></div>`:''}
+    <div class="field" style="margin-top:16px"><label>Alert recipients (admin emails)</label>
+      <input id="alEmails" value="${esc(db.alertEmails)}" placeholder="ops@falconviz.com, pm@client.com">
+      <div class="hint">Saved for the hosted version — sending real emails/SMS needs the backend (I'll wire this when we move to Lovable). In this prototype, alerts appear here and as on-screen notifications while the app is open.</div>
+    </div>`,
+    `<button class="btn" onclick="db.alertEmails=document.getElementById('alEmails').value;save();closeModal();toast('Alert settings saved')">Save & close</button>`);
+}
+function demoAlert(){
+  const list=allTLCams(); if(!list.length) return;
+  const {c,p,l}=list[0];
+  db.alerts=db.alerts.filter(a=>!(a.camId===c.id&&!a.resolved));
+  raiseAlert(c,p,l,c.alertThresholdMin||60);
+  modalAlerts();
+}
+
+/* =====================================================================
+   AFTER RENDER — wire up dynamic behaviour for the current view
+   ===================================================================== */
+function afterRender(proj){
+  // live players (single + wall)
+  document.querySelectorAll('video.player, video.wall-live').forEach(v=>{
+    const src=v.dataset.src; if(!src) return;
+    if(window.Hls && Hls.isSupported()){
+      const h=new Hls({maxBufferLength:10}); h.loadSource(src); h.attachMedia(v); hlsInstances.push(h);
+      h.on(Hls.Events.MANIFEST_PARSED,()=>v.play().catch(()=>{}));
+    } else if(v.canPlayType('application/vnd.apple.mpegurl')){
+      v.src=src; v.play().catch(()=>{});
+    }
+  });
+  // timelapse wall auto refresh
+  if(document.querySelector('.wall-tl')){
+    timers.push(setInterval(()=>{
+      document.querySelectorAll('.wall-tl').forEach(img=>{
+        const cam=db.projects.flatMap(p=>p.locations).flatMap(l=>l.cameras).find(c=>c.id===img.dataset.cam);
+        if(cam) img.src=tlLatest(cam);
+      });
+    }, 60000));
+  }
+  // timelapse main viewer: auto refresh in live mode + zoom/pan
+  const stage=document.getElementById('tlStage');
+  if(stage){
+    zoom={s:1,x:0,y:0}; stageApply();
+    // resolve to the nearest actually-existing frame and stamp real time on the OSD
+    {
+      const l0=findLocation(proj,route.locationId);
+      if(l0){
+        const cams0=l0.cameras.filter(c=>c.type==='timelapse'&&canSeeCamera(c));
+        const cam0=cams0.find(c=>c.id===route.cameraId)||cams0[0];
+        if(cam0){ const want0=tlState.when||new Date(); tlShown=floorSlot(want0,cam0.intervalMin||5); tlResolveNearest(cam0, want0, !tlState.when); }
+      }
+    }
+    if(!tlState.when){
+      timers.push(setInterval(()=>{
+        const img=document.getElementById('tlImg'); if(!img) return;
+        const camId=(document.getElementById('tlCamSel')||{}).value || route.cameraId;
+        const p=findProject(route.projectId), l=findLocation(p,route.locationId);
+        const cams=l.cameras.filter(c=>c.type==='timelapse');
+        const cam=cams.find(c=>c.id===camId)||cams[0];
+        if(!cam) return;
+        const when=floorSlot(new Date(),cam.intervalMin||5);
+        tlShown=when;
+        img.src=tlUrl(cam,when);
+        const osd=document.getElementById('tlOsd');
+        if(osd) osd.innerHTML=`<b>${esc(cam.name)}</b><br>${fmtDT(when)} &nbsp;<span class="rec">● LATEST</span><br><span id="tlZoomLbl">Zoom ${Math.round(zoom.s*100)}%</span> · every ${cam.intervalMin||5} min`;
+      }, 60000));
+    }
+    // wheel zoom
+    stage.addEventListener('wheel',e=>{ e.preventDefault(); stageZoom(e.deltaY<0?1.15:1/1.15); },{passive:false});
+    // drag pan + pinch
+    let drag=null, pinch=null;
+    stage.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY,ox:zoom.x,oy:zoom.y}; stage.classList.add('grabbing'); stage.setPointerCapture(e.pointerId); });
+    stage.addEventListener('pointermove',e=>{ if(drag&&zoom.s>1){ zoom.x=drag.ox+(e.clientX-drag.x); zoom.y=drag.oy+(e.clientY-drag.y); stageApply(); } });
+    stage.addEventListener('pointerup',()=>{ drag=null; stage.classList.remove('grabbing'); });
+    stage.addEventListener('touchstart',e=>{ if(e.touches.length===2){ pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); } },{passive:true});
+    stage.addEventListener('touchmove',e=>{ if(pinch&&e.touches.length===2){ const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); stageZoom(d/pinch); pinch=d; } },{passive:true});
+  }
+  // compare slider + annotations
+  initCompare();
+  initAnnotate();
+  // drag & drop ordering of location cards
+  initLocationDrag();
+  // compare: resolve both sides to nearest existing frames
+  if(document.getElementById('cmpStage') && route.view==='location'){
+    const lC=findLocation(proj,route.locationId);
+    if(lC){
+      const camsC=lC.cameras.filter(c=>c.type==='timelapse'&&canSeeCamera(c));
+      const camC=camsC.find(c=>c.id===route.cameraId)||camsC[0];
+      if(camC && camC.mode!=='demo'){
+        const nowC=floorSlot(new Date(), camC.intervalMin||5);
+        const mA=new Date(nowC); mA.setDate(mA.getDate()-23);
+        cmpResolveNearest(camC, cmp.a||mA, cmp.b||nowC);
+      }
+    }
+  }
+  // live view: zoom/pan wiring (mirrors the timelapse viewer)
+  const lvStage=document.getElementById('lvStage');
+  if(lvStage){
+    lvZoomState={s:1,x:0,y:0}; lvStageApply();
+    lvStage.addEventListener('wheel',e=>{ e.preventDefault(); lvZoomBtn(e.deltaY<0?1.15:1/1.15); },{passive:false});
+    let lvDrag=null, lvPinch=null;
+    lvStage.addEventListener('pointerdown',e=>{ lvDrag={x:e.clientX,y:e.clientY,ox:lvZoomState.x,oy:lvZoomState.y}; lvStage.setPointerCapture(e.pointerId); });
+    lvStage.addEventListener('pointermove',e=>{ if(lvDrag&&lvZoomState.s>1){ lvZoomState.x=lvDrag.ox+(e.clientX-lvDrag.x); lvZoomState.y=lvDrag.oy+(e.clientY-lvDrag.y); lvStageApply(); } });
+    lvStage.addEventListener('pointerup',()=>{ lvDrag=null; });
+    lvStage.addEventListener('touchstart',e=>{ if(e.touches.length===2){ lvPinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); } },{passive:true});
+    lvStage.addEventListener('touchmove',e=>{ if(lvPinch&&e.touches.length===2){ const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); lvZoomBtn(d/lvPinch); lvPinch=d; } },{passive:true});
+  }
+  // camera health: run soon after render, then every 5 minutes
+  setTimeout(()=>runHealthChecks(false), 800);
+  timers.push(setInterval(()=>runHealthChecks(true), 5*60000));
+  // video estimate
+  if(document.getElementById('vgDur')){
+    vgEstimate();
+    document.getElementById('vgDur').addEventListener('input',vgEstimate);
+    document.getElementById('vgFps').addEventListener('input',vgEstimate);
+  }
+}
+
+render();
+</script>
+</body>
+</html>
